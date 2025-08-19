@@ -15,7 +15,7 @@ export const VariablesSection: React.FC = () => {
   const [newVarInitialValue, setNewVarInitialValue] = useState(0);
 
   return (
-    <div className="space-y-3 border-t pt-4">
+    <div className="space-y-3">
       <h4 className="text-sm font-medium">Zmienne globalne</h4>
       <div className="space-y-2">
         {variables.map((v) => (
