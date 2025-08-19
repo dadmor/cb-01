@@ -1,13 +1,15 @@
+// ------ src/components/panels/NodeEditor.tsx ------
 import React from "react";
 import { Input, Select, Label, Button } from "../ui";
 import { useGameStore } from "@/gameStore";
-
+import { FlowNode, FlowEdge, DecisionNode, MainNodeData, DecisionNodeData, Condition, Op } from "@/types";
+import { isMainNode, isDecisionNode } from "@/flowStore";
 
 interface NodeEditorProps {
-  node: any;
-  nodes: any[];
-  edges: any[];
-  onUpdate: (data: any) => void;
+  node: FlowNode;
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  onUpdate: (data: MainNodeData | DecisionNodeData) => void;
 }
 
 export const NodeEditor: React.FC<NodeEditorProps> = ({
@@ -19,47 +21,66 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
   const variables = useGameStore((s) => s.variables);
 
   // Get decisions for current main node
-  const currentDecisions = React.useMemo(() => {
-    if (node.type !== "main") return [];
+  const currentDecisions = React.useMemo((): DecisionNode[] => {
+    if (!isMainNode(node)) return [];
+    
     return edges
       .filter(e => e.source === node.id)
       .map(e => nodes.find(n => n.id === e.target))
-      .filter(n => n && n.type === "decision");
+      .filter((n): n is DecisionNode => n !== undefined && isDecisionNode(n));
   }, [node, edges, nodes]);
+
+  const handleMainNodeUpdate = (updates: Partial<MainNodeData>) => {
+    if (isMainNode(node)) {
+      onUpdate({ ...node.data, ...updates });
+    }
+  };
+
+  const handleDecisionNodeUpdate = (updates: Partial<DecisionNodeData>) => {
+    if (isDecisionNode(node)) {
+      onUpdate({ ...node.data, ...updates });
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div className="space-y-3">
         <h4 className="text-sm font-medium">
-          {node.type === "main" ? "Blok główny" : "Blok decyzyjny"}
+          {isMainNode(node) ? "Blok główny" : "Blok decyzyjny"}
         </h4>
         
-        {/* Nazwa */}
+        {/* Name */}
         <div>
           <Label htmlFor="nodeName">Nazwa</Label>
           <Input
             id="nodeName"
             value={node.data.label || ""}
-            onChange={(e) => onUpdate({ ...node.data, label: e.target.value })}
+            onChange={(e) => {
+              if (isMainNode(node)) {
+                handleMainNodeUpdate({ label: e.target.value });
+              } else {
+                handleDecisionNodeUpdate({ label: e.target.value });
+              }
+            }}
           />
         </div>
 
-        {/* Dla bloków głównych */}
-        {node.type === "main" && (
+        {/* For main nodes */}
+        {isMainNode(node) && (
           <>
-            {/* Czas trwania */}
+            {/* Duration */}
             <div>
               <Label htmlFor="duration">Czas trwania (sekundy)</Label>
               <Input
                 id="duration"
                 type="number"
                 value={node.data.durationSec || 0}
-                onChange={(e) => onUpdate({ ...node.data, durationSec: Number(e.target.value) })}
+                onChange={(e) => handleMainNodeUpdate({ durationSec: Number(e.target.value) })}
               />
               <p className="text-xs text-zinc-500 mt-1">0 = natychmiastowa decyzja</p>
             </div>
 
-            {/* Warunek dostępu */}
+            {/* Access condition */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium">Warunek dostępu</h4>
               <div className="grid grid-cols-3 gap-2">
@@ -67,14 +88,14 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                   value={node.data.condition?.varName || ""}
                   onChange={(e) => {
                     const varName = e.target.value;
-                    onUpdate({
-                      ...node.data,
-                      condition: varName ? { 
-                        varName, 
-                        op: node.data.condition?.op || "gte", 
-                        value: node.data.condition?.value || 1 
-                      } : undefined
-                    });
+                    const condition: Condition | undefined = varName 
+                      ? { 
+                          varName, 
+                          op: node.data.condition?.op || "gte", 
+                          value: node.data.condition?.value || 1 
+                        } 
+                      : undefined;
+                    handleMainNodeUpdate({ condition });
                   }}
                 >
                   <option value="">Zawsze dostępny</option>
@@ -86,12 +107,13 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                   <>
                     <Select
                       value={node.data.condition.op}
-                      onChange={(e) =>
-                        onUpdate({
-                          ...node.data,
-                          condition: { ...node.data.condition, op: e.target.value }
-                        })
-                      }
+                      onChange={(e) => {
+                        const condition: Condition = { 
+                          ...node.data.condition!, 
+                          op: e.target.value as Op 
+                        };
+                        handleMainNodeUpdate({ condition });
+                      }}
                     >
                       <option value="lt">&lt;</option>
                       <option value="lte">≤</option>
@@ -103,19 +125,20 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                     <Input
                       type="number"
                       value={node.data.condition.value}
-                      onChange={(e) =>
-                        onUpdate({
-                          ...node.data,
-                          condition: { ...node.data.condition, value: Number(e.target.value) }
-                        })
-                      }
+                      onChange={(e) => {
+                        const condition: Condition = { 
+                          ...node.data.condition!, 
+                          value: Number(e.target.value) 
+                        };
+                        handleMainNodeUpdate({ condition });
+                      }}
                     />
                   </>
                 )}
               </div>
             </div>
 
-            {/* Domyślna decyzja */}
+            {/* Default decision */}
             {currentDecisions.length > 0 && (
               <div>
                 <Label htmlFor="defaultDecision">Domyślna decyzja (po czasie)</Label>
@@ -123,8 +146,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                   id="defaultDecision"
                   value={node.data.defaultDecisionId || ""}
                   onChange={(e) =>
-                    onUpdate({
-                      ...node.data,
+                    handleMainNodeUpdate({
                       defaultDecisionId: e.target.value || undefined
                     })
                   }
@@ -139,8 +161,8 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
           </>
         )}
 
-        {/* Dla bloków decyzyjnych */}
-        {node.type === "decision" && (
+        {/* For decision nodes */}
+        {isDecisionNode(node) && (
           <div>
             <Label>Efekty decyzji</Label>
             <div className="mt-2 space-y-2">
@@ -153,8 +175,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                       size="icon"
                       variant="outline"
                       onClick={() =>
-                        onUpdate({
-                          ...node.data,
+                        handleDecisionNodeUpdate({
                           deltas: { ...node.data.deltas, [v.name]: delta - 1 }
                         })
                       }
@@ -166,8 +187,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                       type="number"
                       value={delta}
                       onChange={(e) =>
-                        onUpdate({
-                          ...node.data,
+                        handleDecisionNodeUpdate({
                           deltas: { ...node.data.deltas, [v.name]: Number(e.target.value) }
                         })
                       }
@@ -177,8 +197,7 @@ export const NodeEditor: React.FC<NodeEditorProps> = ({
                       size="icon"
                       variant="outline"
                       onClick={() =>
-                        onUpdate({
-                          ...node.data,
+                        handleDecisionNodeUpdate({
                           deltas: { ...node.data.deltas, [v.name]: delta + 1 }
                         })
                       }

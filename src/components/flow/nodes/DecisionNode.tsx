@@ -1,15 +1,8 @@
-import { useGameStore } from "@/gameStore";
+// ------ src/components/flow/nodes/DecisionNode.tsx ------
 import React from "react";
 import { Handle, Position } from "reactflow";
-
-interface DecisionNodeProps {
-  data: {
-    label: string;
-    isAvailable?: boolean;
-    onClick?: () => void; // akcja w trybie gry (nie dotyka selekcji)
-  };
-  selected: boolean; // dostarczane przez React Flow (internal)
-}
+import { useGameStore } from "@/gameStore";
+import { DecisionNodeProps } from "@/types";
 
 export const DecisionNode: React.FC<DecisionNodeProps> = ({ data, selected }) => {
   const mode = useGameStore((s) => s.mode);
@@ -26,7 +19,7 @@ export const DecisionNode: React.FC<DecisionNodeProps> = ({ data, selected }) =>
           : "bg-zinc-100 text-zinc-400 border border-dashed border-zinc-300"
       } ${selected ? "ring-2 ring-zinc-900" : ""}`}
       style={{ minWidth: 120 }}
-      // klik działa tylko w trybie gry; nie używamy tego do selekcji
+      // Click only works in play mode; we don't use this for selection
       onClick={canClick ? data.onClick : undefined}
     >
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />

@@ -5,74 +5,78 @@ import {
   applyEdgeChanges,
   NodeChange,
   EdgeChange,
+  OnNodesChange,
+  OnEdgesChange,
+  OnConnect,
+  Connection,
+  Node,
+  Edge,
 } from "reactflow";
-
-type NodeT = any;
-type EdgeT = any;
+import { FlowNode, FlowEdge, MainNode, DecisionNode, MainNodeData, DecisionNodeData } from "./types";
 
 export const START_NODE_ID = "main-1";
 
-// ===== Initial Data przeniesione z App.tsx =====
-const initialNodes: NodeT[] = [
+// ===== Initial Data =====
+const initialNodes: FlowNode[] = [
   {
     id: "main-1",
-    type: "main",
+    type: "main" as const,
     position: { x: 50, y: 100 },
     data: { label: "Wejście do zamku", durationSec: 10 },
-  },
+  } as MainNode,
   {
     id: "decision-1-1",
-    type: "decision",
+    type: "decision" as const,
     position: { x: 320, y: 50 },
     data: { label: "Weź klucz", deltas: { klucz: 1 } },
-  },
+  } as DecisionNode,
   {
     id: "decision-1-2",
-    type: "decision",
+    type: "decision" as const,
     position: { x: 320, y: 150 },
     data: { label: "Weź miecz", deltas: { miecz: 1 } },
-  },
+  } as DecisionNode,
   {
     id: "main-2",
-    type: "main",
+    type: "main" as const,
     position: { x: 550, y: 100 },
     data: { label: "Sala główna", durationSec: 0 },
-  },
+  } as MainNode,
   {
     id: "decision-2-1",
-    type: "decision",
+    type: "decision" as const,
     position: { x: 820, y: 50 },
     data: { label: "Wyjdź", deltas: {} },
-  },
+  } as DecisionNode,
   {
     id: "decision-2-2",
-    type: "decision",
+    type: "decision" as const,
     position: { x: 820, y: 150 },
     data: { label: "Walcz", deltas: {} },
-  },
+  } as DecisionNode,
   {
     id: "main-3",
-    type: "main",
+    type: "main" as const,
     position: { x: 1050, y: 50 },
     data: {
       label: "Wyjście z zamku",
-      condition: { varName: "klucz", op: "gte", value: 1 },
+      condition: { varName: "klucz", op: "gte" as const, value: 1 },
       durationSec: 0,
     },
-  },
+  } as MainNode,
   {
     id: "main-4",
-    type: "main",
+    type: "main" as const,
     position: { x: 1050, y: 150 },
     data: {
       label: "Walka ze strażnikiem",
-      condition: { varName: "miecz", op: "gte", value: 1 },
+      condition: { varName: "miecz", op: "gte" as const, value: 1 },
       durationSec: 0,
     },
-  },
+  } as MainNode,
 ];
 
-const initialEdges: EdgeT[] = [
+const initialEdges: FlowEdge[] = [
   { id: "e1-1", source: "main-1", target: "decision-1-1", animated: true },
   { id: "e1-2", source: "main-1", target: "decision-1-2", animated: true },
   { id: "e1-1-2", source: "decision-1-1", target: "main-2", animated: true },
@@ -83,29 +87,39 @@ const initialEdges: EdgeT[] = [
   { id: "e2-2-4", source: "decision-2-2", target: "main-4", animated: true },
 ];
 
-// ===== Store =====
-type FlowState = {
-  nodes: NodeT[];
-  edges: EdgeT[];
+// ===== Type Guards =====
+export function isMainNode(node: FlowNode): node is MainNode {
+  return node.type === "main";
+}
+
+export function isDecisionNode(node: FlowNode): node is DecisionNode {
+  return node.type === "decision";
+}
+
+// ===== Store Interface =====
+interface FlowState {
+  nodes: FlowNode[];
+  edges: FlowEdge[];
   selectedNodeId: string | null;
 
-  // akcje
+  // Actions
   setSelectedNode: (id: string | null) => void;
-  applyNodesChange: (changes: NodeChange[]) => void;
-  applyEdgesChange: (changes: EdgeChange[]) => void;
-
+  applyNodesChange: OnNodesChange;
+  applyEdgesChange: OnEdgesChange;
+  
   addMainNode: () => void;
   deleteNode: (id: string) => void;
-  updateNode: (id: string, data: any) => void;
-
+  updateNode: (id: string, data: MainNodeData | DecisionNodeData) => void;
+  
   insertDecisionBetweenMainNodes: (sourceId: string, targetId: string) => string | null;
 
-  // selektory/projekcje
-  getCurrentNode: (currentNodeId: string | null) => NodeT | undefined;
-  getCurrentDecisions: (currentNodeId: string | null) => NodeT[];
-  getSelectedNode: () => NodeT | undefined;
-};
+  // Selectors
+  getCurrentNode: (currentNodeId: string | null) => FlowNode | undefined;
+  getCurrentDecisions: (currentNodeId: string | null) => DecisionNode[];
+  getSelectedNode: () => FlowNode | undefined;
+}
 
+// ===== Store Implementation =====
 export const useFlowStore = create<FlowState>((set, get) => ({
   nodes: initialNodes,
   edges: initialEdges,
@@ -114,17 +128,26 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   setSelectedNode: (id) => set({ selectedNodeId: id }),
 
   applyNodesChange: (changes) =>
-    set((s) => ({ nodes: applyNodeChanges(changes, s.nodes) })),
+    set((state) => {
+      // Use a more generic type for ReactFlow's applyNodeChanges
+      const updatedNodes = applyNodeChanges(changes, state.nodes as Node[]);
+      // Cast back to our specific types
+      return { nodes: updatedNodes as FlowNode[] };
+    }),
+    
   applyEdgesChange: (changes) =>
-    set((s) => ({ edges: applyEdgeChanges(changes, s.edges) })),
+    set((state) => {
+      const updatedEdges = applyEdgeChanges(changes, state.edges as Edge[]);
+      return { edges: updatedEdges as FlowEdge[] };
+    }),
 
   addMainNode: () => {
     const { nodes } = get();
-    const lastMain = nodes
-      .filter((n) => n.type === "main")
-      .sort((a, b) => b.position.x - a.position.x)[0];
+    const mainNodes = nodes.filter(isMainNode);
+    const lastMain = mainNodes.sort((a, b) => b.position.x - a.position.x)[0];
+    
     const id = `main-${Date.now()}`;
-    const newNode = {
+    const newNode: MainNode = {
       id,
       type: "main",
       position: {
@@ -133,6 +156,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       },
       data: { label: "Nowy blok", durationSec: 0 },
     };
+    
     set({ nodes: [...nodes, newNode], selectedNodeId: id });
   },
 
@@ -141,7 +165,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     const node = nodes.find((n) => n.id === id);
     if (!node) return;
 
-    if (node.type === "decision") {
+    if (isDecisionNode(node)) {
       set({
         nodes: nodes.filter((n) => n.id !== id),
         edges: edges.filter((e) => e.source !== id && e.target !== id),
@@ -150,13 +174,17 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       return;
     }
 
-    // usuwanie main + podpiętych decision
+    // Delete main node + connected decision nodes
     const connectedDecisions = edges
       .filter((e) => e.source === id || e.target === id)
       .map((e) => (e.source === id ? e.target : e.source))
-      .filter((decId) => nodes.find((n) => n.id === decId)?.type === "decision");
+      .filter((decId) => {
+        const decNode = nodes.find((n) => n.id === decId);
+        return decNode && isDecisionNode(decNode);
+      });
 
     const toDelete = new Set([id, ...connectedDecisions]);
+    
     set({
       nodes: nodes.filter((n) => !toDelete.has(n.id)),
       edges: edges.filter(
@@ -167,42 +195,52 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   updateNode: (id, data) =>
-    set((s) => ({
-      nodes: s.nodes.map((n) => (n.id === id ? { ...n, data } : n)),
+    set((state) => ({
+      nodes: state.nodes.map((n) => {
+        if (n.id !== id) return n;
+        
+        // Preserve the node type when updating
+        if (isMainNode(n)) {
+          return { ...n, data: data as MainNodeData } as MainNode;
+        } else {
+          return { ...n, data: data as DecisionNodeData } as DecisionNode;
+        }
+      }),
     })),
 
   insertDecisionBetweenMainNodes: (sourceId, targetId) => {
     const { nodes, edges } = get();
     const sourceNode = nodes.find((n) => n.id === sourceId);
     const targetNode = nodes.find((n) => n.id === targetId);
+    
     if (!sourceNode || !targetNode) return null;
-    if (sourceNode.type !== "main" || targetNode.type !== "main") return null;
+    if (!isMainNode(sourceNode) || !isMainNode(targetNode)) return null;
     if (sourceNode.position.x >= targetNode.position.x) return null;
 
+    const decisionCount = nodes.filter(isDecisionNode).length;
     const decisionId = `decision-${Date.now()}`;
-    const decisionNode: NodeT = {
+    
+    const decisionNode: DecisionNode = {
       id: decisionId,
       type: "decision",
       position: {
         x: (sourceNode.position.x + targetNode.position.x) / 2,
-        y:
-          sourceNode.position.y +
-          edges.filter((e) => e.source === sourceId).length * 60,
+        y: sourceNode.position.y + edges.filter((e) => e.source === sourceId).length * 60,
       },
       data: {
-        label: `Decyzja ${nodes.filter((n) => n.type === "decision").length + 1}`,
+        label: `Decyzja ${decisionCount + 1}`,
         deltas: {},
       },
     };
 
-    const edge1: EdgeT = {
+    const edge1: FlowEdge = {
       id: `e-${sourceId}-${decisionId}`,
       source: sourceId,
       target: decisionId,
       animated: true,
     };
 
-    const edge2: EdgeT = {
+    const edge2: FlowEdge = {
       id: `e-${decisionId}-${targetId}`,
       source: decisionId,
       target: targetId,
@@ -219,19 +257,20 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   getCurrentNode: (currentNodeId) =>
-    get().nodes.find((n) => n.id === currentNodeId),
+    currentNodeId ? get().nodes.find((n) => n.id === currentNodeId) : undefined,
 
   getCurrentDecisions: (currentNodeId) => {
     const { nodes, edges } = get();
     if (!currentNodeId) return [];
+    
     return edges
       .filter((e) => e.source === currentNodeId)
       .map((e) => nodes.find((n) => n.id === e.target))
-      .filter((n: any) => n && n.type === "decision");
+      .filter((n): n is DecisionNode => n !== undefined && isDecisionNode(n));
   },
 
   getSelectedNode: () => {
     const { nodes, selectedNodeId } = get();
-    return nodes.find((n) => n.id === selectedNodeId);
+    return selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : undefined;
   },
 }));

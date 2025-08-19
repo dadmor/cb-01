@@ -1,16 +1,30 @@
+// ------ src/components/flow/hooks/index.ts ------
 import { useGameStore, VARIABLES } from "@/gameStore";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { 
+  FlowNode, 
+  FlowEdge, 
+  IsNodeUnlockedFn, 
+  TraverseDecisionFn, 
+  NodeRuntimeResult,
+  MainNode,
+  DecisionNode
+} from "@/types";
+import { isMainNode, isDecisionNode } from "@/flowStore";
 
-
-export function useIsNodeUnlocked() {
+export function useIsNodeUnlocked(): IsNodeUnlockedFn {
   const variables = useGameStore((s) => s.variables);
-  return useCallback((node) => {
-    if (node.type === "decision") return true;
+  
+  return useCallback((node: FlowNode) => {
+    if (isDecisionNode(node)) return true;
     return VARIABLES.evaluate(variables, node.data.condition);
   }, [variables]);
 }
 
-export function useTraverseDecision(nodes: any[], edges: any[]) {
+export function useTraverseDecision(
+  nodes: FlowNode[], 
+  edges: FlowEdge[]
+): TraverseDecisionFn {
   const mode = useGameStore((s) => s.mode);
   const isGameOver = useGameStore((s) => s.isGameOver);
   const setVariables = useGameStore((s) => s.setVariables);
@@ -20,14 +34,14 @@ export function useTraverseDecision(nodes: any[], edges: any[]) {
     if (mode === "edit" || isGameOver) return;
     
     const decisionNode = nodes.find(n => n.id === decisionNodeId);
-    if (!decisionNode) return;
+    if (!decisionNode || !isDecisionNode(decisionNode)) return;
     
     // Find the edge from decision to target
     const outgoingEdge = edges.find(e => e.source === decisionNodeId);
     if (!outgoingEdge) return;
     
     const targetNode = nodes.find(n => n.id === outgoingEdge.target);
-    if (!targetNode) return;
+    if (!targetNode || !isMainNode(targetNode)) return;
     
     setVariables((prev) => {
       const next = VARIABLES.applyDeltas(prev, decisionNode.data.deltas);
@@ -39,31 +53,47 @@ export function useTraverseDecision(nodes: any[], edges: any[]) {
   }, [mode, isGameOver, nodes, edges, setVariables, setCurrentNode]);
 }
 
-export function useNodeRuntime(currentNode: any, nodes: any[], edges: any[]) {
+export function useNodeRuntime(
+  currentNode: FlowNode | undefined, 
+  nodes: FlowNode[], 
+  edges: FlowEdge[]
+): NodeRuntimeResult {
   const mode = useGameStore((s) => s.mode);
   const isGameOver = useGameStore((s) => s.isGameOver);
   const setGameOver = useGameStore((s) => s.setGameOver);
   const traverseDecision = useTraverseDecision(nodes, edges);
   const isNodeUnlocked = useIsNodeUnlocked();
+  
   const [remainingMs, setRemainingMs] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const clear = () => {
-      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+      if (intervalRef.current) { 
+        clearInterval(intervalRef.current); 
+        intervalRef.current = null; 
+      }
+      if (timeoutRef.current) { 
+        clearTimeout(timeoutRef.current); 
+        timeoutRef.current = null; 
+      }
     };
 
     clear();
     setRemainingMs(0);
-    if (mode !== "play" || isGameOver || !currentNode || currentNode.type === "decision") return;
+    
+    if (mode !== "play" || isGameOver || !currentNode || !isMainNode(currentNode)) {
+      return;
+    }
 
     const durSec = currentNode.data.durationSec ?? 0;
     
     // Find decision nodes connected to current node
     const outgoingEdges = edges.filter(e => e.source === currentNode.id);
-    const decisionNodes = outgoingEdges.map(e => nodes.find(n => n.id === e.target)).filter(Boolean);
+    const decisionNodes = outgoingEdges
+      .map(e => nodes.find(n => n.id === e.target))
+      .filter((n): n is DecisionNode => n !== undefined && isDecisionNode(n));
     
     if (!durSec || durSec <= 0) {
       // Immediate decision or end node

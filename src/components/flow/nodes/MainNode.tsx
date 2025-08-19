@@ -1,16 +1,7 @@
+// ------ src/components/flow/nodes/MainNode.tsx ------
 import React from "react";
 import { Handle, Position } from "reactflow";
-
-interface MainNodeProps {
-  data: {
-    label: string;
-    isUnlocked?: boolean;
-    isCurrent?: boolean;
-    durationSec?: number;
-    remainingMs?: number;
-  };
-  selected: boolean; // dostarczane przez React Flow na podstawie WEWNĘTRZNEJ selekcji
-}
+import { MainNodeProps } from "@/types";
 
 export const MainNode: React.FC<MainNodeProps> = ({ data, selected }) => {
   const isUnlocked = data.isUnlocked ?? true;

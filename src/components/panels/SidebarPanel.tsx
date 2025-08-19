@@ -4,8 +4,9 @@ import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Label } from "
 import { NodeEditor } from "./NodeEditor";
 import { VariablesSection } from "./VariablesSection";
 import { useGameStore } from "@/gameStore";
-import { START_NODE_ID, useFlowStore } from "@/flowStore";
-import { useNodeRuntime } from "../..//components/flow/hooks";
+import { START_NODE_ID, useFlowStore, isMainNode, isDecisionNode } from "@/flowStore";
+import { useNodeRuntime } from "../flow/hooks";
+import { DecisionNode } from "@/types";
 
 export const SidebarPanel: React.FC = () => {
   const mode = useGameStore((s) => s.mode);
@@ -27,16 +28,19 @@ export const SidebarPanel: React.FC = () => {
     () => nodes.find((n) => n.id === selectedNodeId),
     [nodes, selectedNodeId]
   );
+  
   const currentNode = useMemo(
     () => nodes.find((n) => n.id === currentNodeId),
     [nodes, currentNodeId]
   );
-  const currentDecisions = useMemo(() => {
-    if (!currentNode || currentNode.type !== "main") return [];
+  
+  const currentDecisions = useMemo((): DecisionNode[] => {
+    if (!currentNode || !isMainNode(currentNode)) return [];
+    
     return edges
       .filter((e) => e.source === currentNode.id)
       .map((e) => nodes.find((n) => n?.id === e.target))
-      .filter((n) => n && n.type === "decision") as any[];
+      .filter((n): n is DecisionNode => n !== undefined && isDecisionNode(n));
   }, [currentNode, edges, nodes]);
 
   const { remainingMs } = useNodeRuntime(currentNode, nodes, edges);
@@ -70,7 +74,7 @@ export const SidebarPanel: React.FC = () => {
             )}
           </div>
         </div>
-        {mode === "play" && currentNode && (
+        {mode === "play" && currentNode && isMainNode(currentNode) && (
           <div className="text-sm text-zinc-500">
             {currentNode.data.label}
             {(currentNode.data.durationSec ?? 0) > 0 && (
@@ -83,8 +87,8 @@ export const SidebarPanel: React.FC = () => {
       </CardHeader>
 
       <CardContent className="flex-1 overflow-auto space-y-4 p-4">
-        {/* Tryb GRY */}
-        {mode === "play" && !isGameOver && currentNode?.type === "main" && (
+        {/* Play mode */}
+        {mode === "play" && !isGameOver && currentNode && isMainNode(currentNode) && (
           <div className="space-y-2">
             <Label>Dostępne decyzje</Label>
             {currentDecisions.length === 0 ? (
@@ -99,7 +103,7 @@ export const SidebarPanel: React.FC = () => {
           </div>
         )}
 
-        {/* Tryb EDYCJI */}
+        {/* Edit mode */}
         {mode === "edit" && (
           <>
             <div className="flex gap-2">
@@ -138,7 +142,7 @@ export const SidebarPanel: React.FC = () => {
           </>
         )}
 
-        {/* Zmienne globalne - zawsze widoczne */}
+        {/* Global variables - always visible */}
         <VariablesSection />
       </CardContent>
     </Card>

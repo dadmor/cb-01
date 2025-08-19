@@ -6,14 +6,18 @@ import ReactFlow, {
   Background,
   ConnectionLineType,
   MarkerType,
+  OnConnect,
+  OnSelectionChangeFunc,
+  NodeTypes,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { DecisionNode, MainNode } from "./nodes";
 import { useGameStore } from "@/gameStore";
 import { useIsNodeUnlocked, useNodeRuntime, useTraverseDecision } from "./hooks";
-import { useFlowStore } from "@/flowStore";
+import { useFlowStore, isMainNode, isDecisionNode } from "@/flowStore";
+import { FlowNode, MainNodeData, DecisionNodeData } from "@/types";
 
-const nodeTypes = {
+const nodeTypes: NodeTypes = {
   main: MainNode,
   decision: DecisionNode,
 };
@@ -40,13 +44,13 @@ export const FlowCanvas: React.FC = () => {
   const traverseDecision = useTraverseDecision(nodes, edges);
   const { remainingMs } = useNodeRuntime(currentNode, nodes, edges);
 
-  // wzbogacamy dane węzłów o runtime/stan (bez pola selected!)
+  // Enrich node data with runtime state (without selected field!)
   const nodesWithState = useMemo(() => {
-    return nodes.map((node) => {
+    return nodes.map((node): FlowNode => {
       const isUnlocked = isNodeUnlocked(node);
       const isCurrent = mode === "play" && node.id === currentNodeId;
 
-      if (node.type === "decision") {
+      if (isDecisionNode(node)) {
         const incomingEdge = edges.find((e) => e.target === node.id);
         const sourceIsCurrent =
           mode === "play" && incomingEdge && incomingEdge.source === currentNodeId;
@@ -56,42 +60,47 @@ export const FlowCanvas: React.FC = () => {
           : null;
         const targetUnlocked = targetNode ? isNodeUnlocked(targetNode) : false;
 
+        const enrichedData: DecisionNodeData = {
+          ...node.data,
+          isAvailable: sourceIsCurrent && targetUnlocked,
+          onClick: () => traverseDecision(node.id),
+        };
+
         return {
           ...node,
-          data: {
-            ...node.data,
-            isAvailable: sourceIsCurrent && targetUnlocked,
-            onClick: () => traverseDecision(node.id),
-          },
+          data: enrichedData,
         };
       }
 
+      // Main node
+      const enrichedData: MainNodeData = {
+        ...node.data,
+        isUnlocked,
+        isCurrent,
+        remainingMs: isCurrent ? remainingMs : undefined,
+      };
+
       return {
         ...node,
-        data: {
-          ...node.data,
-          isUnlocked,
-          isCurrent,
-          remainingMs: isCurrent ? remainingMs : undefined,
-        },
+        data: enrichedData,
       };
     });
   }, [nodes, edges, mode, currentNodeId, isNodeUnlocked, traverseDecision, remainingMs]);
 
-  const onConnect = useCallback(
-    (params: any) => {
+  const onConnect: OnConnect = useCallback(
+    (params) => {
       if (!params?.source || !params?.target) return;
       const createdId = insertDecisionBetweenMainNodes(params.source, params.target);
       if (createdId) {
-        // tylko informacyjnie do panelu
+        // Just for info panel
         setSelectedNode(createdId);
       }
     },
     [insertDecisionBetweenMainNodes, setSelectedNode]
   );
 
-  const onSelectionChange = useCallback(
-    ({ nodes: selected }: any) => {
+  const onSelectionChange: OnSelectionChangeFunc = useCallback(
+    ({ nodes: selected }) => {
       if (mode === "edit") {
         setSelectedNode(selected?.[0]?.id ?? null);
       }
@@ -115,7 +124,10 @@ export const FlowCanvas: React.FC = () => {
       onPaneClick={onPaneClick}
       connectionLineType={ConnectionLineType.SmoothStep}
       connectionLineStyle={{ stroke: "#10b981" }}
-      defaultEdgeOptions={{ type: "smoothstep", markerEnd: { type: MarkerType.ArrowClosed } }}
+      defaultEdgeOptions={{ 
+        type: "smoothstep", 
+        markerEnd: { type: MarkerType.ArrowClosed } 
+      }}
       fitView
     >
       <Controls />
