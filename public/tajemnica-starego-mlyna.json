@@ -1,0 +1,628 @@
+{
+    "title": "Tajemnica Starego Młyna",
+    "description": "Mroczna opowieść detektywistyczna w małym miasteczku, gdzie każda decyzja ma znaczenie",
+    "variables": [
+      {
+        "name": "zdrowie",
+        "value": 100,
+        "initialValue": 100,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "reputacja",
+        "value": 50,
+        "initialValue": 50,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "dowody",
+        "value": 0,
+        "initialValue": 0,
+        "min": 0,
+        "max": 10
+      },
+      {
+        "name": "zaufanie_burmistrza",
+        "value": 0,
+        "initialValue": 0,
+        "min": -10,
+        "max": 10
+      },
+      {
+        "name": "wiedza_o_kulcie",
+        "value": 0,
+        "initialValue": 0,
+        "min": 0,
+        "max": 5
+      },
+      {
+        "name": "latarka",
+        "value": 0,
+        "initialValue": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "klucz_do_piwnicy",
+        "value": 0,
+        "initialValue": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "nodes": [
+      {
+        "id": "main-1",
+        "type": "main",
+        "position": { "x": 250, "y": 250 },
+        "data": {
+          "label": "Przyjazd do Czarnego Dębu",
+          "durationSec": 10,
+          "defaultDecisionId": "decision-2"
+        }
+      },
+      {
+        "id": "decision-2",
+        "type": "decision",
+        "position": { "x": 450, "y": 200 },
+        "data": {
+          "label": "Idź prosto do młyna",
+          "deltas": {
+            "reputacja": -5
+          }
+        }
+      },
+      {
+        "id": "decision-3",
+        "type": "decision",
+        "position": { "x": 450, "y": 300 },
+        "data": {
+          "label": "Najpierw odwiedź burmistrza",
+          "deltas": {
+            "reputacja": 10,
+            "zaufanie_burmistrza": 2
+          }
+        }
+      },
+      {
+        "id": "main-4",
+        "type": "main",
+        "position": { "x": 650, "y": 150 },
+        "data": {
+          "label": "Stary Młyn - Dzień",
+          "durationSec": 15,
+          "condition": {
+            "varName": "latarka",
+            "op": "eq",
+            "value": 0
+          }
+        }
+      },
+      {
+        "id": "main-5",
+        "type": "main",
+        "position": { "x": 650, "y": 300 },
+        "data": {
+          "label": "Gabinet Burmistrza",
+          "durationSec": 20,
+          "defaultDecisionId": "decision-6"
+        }
+      },
+      {
+        "id": "decision-6",
+        "type": "decision",
+        "position": { "x": 850, "y": 280 },
+        "data": {
+          "label": "Wypytaj o historię młyna",
+          "deltas": {
+            "wiedza_o_kulcie": 1,
+            "dowody": 1
+          }
+        }
+      },
+      {
+        "id": "decision-7",
+        "type": "decision",
+        "position": { "x": 850, "y": 350 },
+        "data": {
+          "label": "Poproś o klucz do piwnicy",
+          "deltas": {
+            "klucz_do_piwnicy": 1,
+            "zaufanie_burmistrza": -1
+          }
+        }
+      },
+      {
+        "id": "main-8",
+        "type": "main",
+        "position": { "x": 1050, "y": 300 },
+        "data": {
+          "label": "Tajemnicza przeszłość",
+          "durationSec": 12,
+          "condition": {
+            "varName": "zaufanie_burmistrza",
+            "op": "gte",
+            "value": 1
+          },
+          "defaultDecisionId": "decision-28"
+        }
+      },
+      {
+        "id": "decision-9",
+        "type": "decision",
+        "position": { "x": 850, "y": 100 },
+        "data": {
+          "label": "Zbadaj ślady krwi",
+          "deltas": {
+            "dowody": 2,
+            "zdrowie": -10
+          }
+        }
+      },
+      {
+        "id": "decision-10",
+        "type": "decision",
+        "position": { "x": 850, "y": 180 },
+        "data": {
+          "label": "Przeszukaj biuro na piętrze",
+          "deltas": {
+            "dowody": 1,
+            "latarka": 1
+          }
+        }
+      },
+      {
+        "id": "main-11",
+        "type": "main",
+        "position": { "x": 1050, "y": 100 },
+        "data": {
+          "label": "Mroczne odkrycie",
+          "durationSec": 8,
+          "condition": {
+            "varName": "dowody",
+            "op": "gte",
+            "value": 2
+          },
+          "defaultDecisionId": "decision-29"
+        }
+      },
+      {
+        "id": "main-12",
+        "type": "main",
+        "position": { "x": 1250, "y": 200 },
+        "data": {
+          "label": "Piwnica młyna - Noc",
+          "durationSec": 25,
+          "condition": {
+            "varName": "klucz_do_piwnicy",
+            "op": "eq",
+            "value": 1
+          },
+          "defaultDecisionId": "decision-13"
+        }
+      },
+      {
+        "id": "decision-13",
+        "type": "decision",
+        "position": { "x": 1450, "y": 150 },
+        "data": {
+          "label": "Skonfrontuj kultystów",
+          "deltas": {
+            "zdrowie": -30,
+            "reputacja": 20,
+            "dowody": 3
+          }
+        }
+      },
+      {
+        "id": "decision-14",
+        "type": "decision",
+        "position": { "x": 1450, "y": 250 },
+        "data": {
+          "label": "Ukryj się i obserwuj",
+          "deltas": {
+            "wiedza_o_kulcie": 3,
+            "dowody": 2
+          }
+        }
+      },
+      {
+        "id": "main-15",
+        "type": "main",
+        "position": { "x": 1650, "y": 100 },
+        "data": {
+          "label": "Walka o życie",
+          "durationSec": 15,
+          "condition": {
+            "varName": "zdrowie",
+            "op": "gt",
+            "value": 0
+          },
+          "defaultDecisionId": "decision-30"
+        }
+      },
+      {
+        "id": "main-16",
+        "type": "main",
+        "position": { "x": 1650, "y": 250 },
+        "data": {
+          "label": "Rytuał Przywołania",
+          "durationSec": 30,
+          "condition": {
+            "varName": "wiedza_o_kulcie",
+            "op": "gte",
+            "value": 3
+          },
+          "defaultDecisionId": "decision-17"
+        }
+      },
+      {
+        "id": "decision-17",
+        "type": "decision",
+        "position": { "x": 1850, "y": 200 },
+        "data": {
+          "label": "Przerwij rytuał",
+          "deltas": {
+            "zdrowie": -50,
+            "reputacja": 30
+          }
+        }
+      },
+      {
+        "id": "decision-18",
+        "type": "decision",
+        "position": { "x": 1850, "y": 300 },
+        "data": {
+          "label": "Uciekaj po pomoc",
+          "deltas": {
+            "reputacja": -20,
+            "zdrowie": -10
+          }
+        }
+      },
+      {
+        "id": "main-19",
+        "type": "main",
+        "position": { "x": 2050, "y": 150 },
+        "data": {
+          "label": "Bohater Czarnego Dębu",
+          "durationSec": 0,
+          "condition": {
+            "varName": "reputacja",
+            "op": "gte",
+            "value": 60
+          }
+        }
+      },
+      {
+        "id": "main-20",
+        "type": "main",
+        "position": { "x": 2050, "y": 350 },
+        "data": {
+          "label": "Wygnanie",
+          "durationSec": 0,
+          "condition": {
+            "varName": "reputacja",
+            "op": "lt",
+            "value": 30
+          }
+        }
+      },
+      {
+        "id": "main-21",
+        "type": "main",
+        "position": { "x": 2050, "y": 250 },
+        "data": {
+          "label": "Mroczna Prawda",
+          "durationSec": 0,
+          "condition": {
+            "varName": "dowody",
+            "op": "gte",
+            "value": 5
+          }
+        }
+      },
+      {
+        "id": "decision-22",
+        "type": "decision",
+        "position": { "x": 1250, "y": 350 },
+        "data": {
+          "label": "Wezwij policję",
+          "deltas": {
+            "reputacja": 15,
+            "zaufanie_burmistrza": -5
+          }
+        }
+      },
+      {
+        "id": "main-23",
+        "type": "main",
+        "position": { "x": 1450, "y": 400 },
+        "data": {
+          "label": "Obława policyjna",
+          "durationSec": 20,
+          "condition": {
+            "varName": "dowody",
+            "op": "gte",
+            "value": 4
+          },
+          "defaultDecisionId": "decision-31"
+        }
+      },
+      {
+        "id": "decision-24",
+        "type": "decision",
+        "position": { "x": 450, "y": 400 },
+        "data": {
+          "label": "Odwiedź miejscowy bar",
+          "deltas": {
+            "reputacja": 5,
+            "wiedza_o_kulcie": 1,
+            "zdrowie": -5
+          }
+        }
+      },
+      {
+        "id": "main-25",
+        "type": "main",
+        "position": { "x": 650, "y": 450 },
+        "data": {
+          "label": "Plotki w 'Krwawym Kuflu'",
+          "durationSec": 15,
+          "defaultDecisionId": "decision-26"
+        }
+      },
+      {
+        "id": "decision-26",
+        "type": "decision",
+        "position": { "x": 850, "y": 450 },
+        "data": {
+          "label": "Zapłać za informacje",
+          "deltas": {
+            "dowody": 1,
+            "wiedza_o_kulcie": 1
+          }
+        }
+      },
+      {
+        "id": "decision-27",
+        "type": "decision",
+        "position": { "x": 850, "y": 520 },
+        "data": {
+          "label": "Sprowokuj bójkę",
+          "deltas": {
+            "zdrowie": -20,
+            "reputacja": -10,
+            "klucz_do_piwnicy": 1
+          }
+        }
+      },
+      {
+        "id": "decision-28",
+        "type": "decision",
+        "position": { "x": 1150, "y": 280 },
+        "data": {
+          "label": "Idź zbadać piwnicę młyna",
+          "deltas": {}
+        }
+      },
+      {
+        "id": "decision-29",
+        "type": "decision",
+        "position": { "x": 1150, "y": 150 },
+        "data": {
+          "label": "Zgłoś odkrycie policji",
+          "deltas": {}
+        }
+      },
+      {
+        "id": "decision-30",
+        "type": "decision",
+        "position": { "x": 1850, "y": 100 },
+        "data": {
+          "label": "Ujawnij prawdę o kulcie",
+          "deltas": {
+            "reputacja": 10
+          }
+        }
+      },
+      {
+        "id": "decision-31",
+        "type": "decision",
+        "position": { "x": 1650, "y": 400 },
+        "data": {
+          "label": "Zeznaj jako świadek",
+          "deltas": {
+            "reputacja": 10
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "main-1",
+        "target": "decision-2"
+      },
+      {
+        "id": "e2",
+        "source": "main-1",
+        "target": "decision-3"
+      },
+      {
+        "id": "e3",
+        "source": "main-1",
+        "target": "decision-24"
+      },
+      {
+        "id": "e4",
+        "source": "decision-2",
+        "target": "main-4"
+      },
+      {
+        "id": "e5",
+        "source": "decision-3",
+        "target": "main-5"
+      },
+      {
+        "id": "e6",
+        "source": "main-5",
+        "target": "decision-6"
+      },
+      {
+        "id": "e7",
+        "source": "main-5",
+        "target": "decision-7"
+      },
+      {
+        "id": "e8",
+        "source": "decision-6",
+        "target": "main-8"
+      },
+      {
+        "id": "e9",
+        "source": "decision-7",
+        "target": "main-8"
+      },
+      {
+        "id": "e10",
+        "source": "main-4",
+        "target": "decision-9"
+      },
+      {
+        "id": "e11",
+        "source": "main-4",
+        "target": "decision-10"
+      },
+      {
+        "id": "e12",
+        "source": "decision-9",
+        "target": "main-11"
+      },
+      {
+        "id": "e13",
+        "source": "decision-10",
+        "target": "main-11"
+      },
+      {
+        "id": "e14",
+        "source": "main-8",
+        "target": "decision-28"
+      },
+      {
+        "id": "e15",
+        "source": "decision-28",
+        "target": "main-12"
+      },
+      {
+        "id": "e16",
+        "source": "main-11",
+        "target": "decision-29"
+      },
+      {
+        "id": "e17",
+        "source": "decision-29",
+        "target": "main-12"
+      },
+      {
+        "id": "e18",
+        "source": "main-12",
+        "target": "decision-13"
+      },
+      {
+        "id": "e19",
+        "source": "main-12",
+        "target": "decision-14"
+      },
+      {
+        "id": "e20",
+        "source": "decision-13",
+        "target": "main-15"
+      },
+      {
+        "id": "e21",
+        "source": "decision-14",
+        "target": "main-16"
+      },
+      {
+        "id": "e22",
+        "source": "main-16",
+        "target": "decision-17"
+      },
+      {
+        "id": "e23",
+        "source": "main-16",
+        "target": "decision-18"
+      },
+      {
+        "id": "e24",
+        "source": "decision-17",
+        "target": "main-19"
+      },
+      {
+        "id": "e25",
+        "source": "decision-18",
+        "target": "main-20"
+      },
+      {
+        "id": "e26",
+        "source": "main-15",
+        "target": "decision-30"
+      },
+      {
+        "id": "e27",
+        "source": "decision-30",
+        "target": "main-21"
+      },
+      {
+        "id": "e28",
+        "source": "main-11",
+        "target": "decision-22"
+      },
+      {
+        "id": "e29",
+        "source": "decision-22",
+        "target": "main-23"
+      },
+      {
+        "id": "e30",
+        "source": "main-23",
+        "target": "decision-31"
+      },
+      {
+        "id": "e31",
+        "source": "decision-31",
+        "target": "main-19"
+      },
+      {
+        "id": "e32",
+        "source": "decision-24",
+        "target": "main-25"
+      },
+      {
+        "id": "e33",
+        "source": "main-25",
+        "target": "decision-26"
+      },
+      {
+        "id": "e34",
+        "source": "main-25",
+        "target": "decision-27"
+      },
+      {
+        "id": "e35",
+        "source": "decision-26",
+        "target": "main-8"
+      },
+      {
+        "id": "e36",
+        "source": "decision-27",
+        "target": "main-12"
+      }
+    ],
+    "version": "1.0.0",
+    "createdAt": "2025-01-01T15:30:00.000Z",
+    "updatedAt": "2025-01-01T16:45:00.000Z"
+  }

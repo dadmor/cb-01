@@ -1,93 +1,82 @@
 // ------ src/flowStore.ts ------
 import { create } from "zustand";
-import {
-  applyNodeChanges,
-  applyEdgeChanges,
-  NodeChange,
+import { 
+  applyNodeChanges as applyNodeChangesBase, 
+  applyEdgeChanges as applyEdgeChangesBase, 
+  NodeChange, 
   EdgeChange,
-  OnNodesChange,
-  OnEdgesChange,
-  OnConnect,
-  Connection,
   Node,
-  Edge,
+  Edge
 } from "reactflow";
-import { FlowNode, FlowEdge, MainNode, DecisionNode, MainNodeData, DecisionNodeData } from "./types";
+import { 
+  FlowNode, 
+  FlowEdge, 
+  MainNode, 
+  DecisionNode, 
+  MainNodeData, 
+  DecisionNodeData,
+  ProjectData,
+  Variable
+} from "./types";
+import { useGameStore } from "./gameStore";
 
+// Type-safe wrappers for reactflow functions
+const applyNodeChanges = (changes: NodeChange[], nodes: FlowNode[]): FlowNode[] => {
+  return applyNodeChangesBase(changes, nodes as any) as FlowNode[];
+};
+
+const applyEdgeChanges = (changes: EdgeChange[], edges: FlowEdge[]): FlowEdge[] => {
+  return applyEdgeChangesBase(changes, edges as any) as FlowEdge[];
+};
+
+interface FlowStore {
+  // Project metadata
+  projectTitle: string;
+  projectDescription: string;
+  
+  // Flow state
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  selectedNodeId: string | null;
+  nextNodeId: number;
+
+  // Actions
+  setProjectTitle: (title: string) => void;
+  setProjectDescription: (description: string) => void;
+  applyNodesChange: (changes: NodeChange[]) => void;
+  applyEdgesChange: (changes: EdgeChange[]) => void;
+  setSelectedNode: (nodeId: string | null) => void;
+  addMainNode: () => void;
+  deleteNode: (nodeId: string) => void;
+  updateNode: (nodeId: string, data: MainNodeData | DecisionNodeData) => void;
+  insertDecisionBetweenMainNodes: (sourceId: string, targetId: string) => string | null;
+  
+  // Import/Export
+  exportProject: () => ProjectData;
+  importProject: (data: ProjectData) => void;
+  resetProject: () => void;
+}
+
+// Constants
 export const START_NODE_ID = "main-1";
+const PROJECT_VERSION = "1.0.0";
 
-// ===== Initial Data =====
-const initialNodes: FlowNode[] = [
+// Initial nodes and edges
+const INITIAL_NODES: FlowNode[] = [
   {
-    id: "main-1",
-    type: "main" as const,
-    position: { x: 50, y: 100 },
-    data: { label: "Wejście do zamku", durationSec: 10 },
-  } as MainNode,
-  {
-    id: "decision-1-1",
-    type: "decision" as const,
-    position: { x: 320, y: 50 },
-    data: { label: "Weź klucz", deltas: { klucz: 1 } },
-  } as DecisionNode,
-  {
-    id: "decision-1-2",
-    type: "decision" as const,
-    position: { x: 320, y: 150 },
-    data: { label: "Weź miecz", deltas: { miecz: 1 } },
-  } as DecisionNode,
-  {
-    id: "main-2",
-    type: "main" as const,
-    position: { x: 550, y: 100 },
-    data: { label: "Sala główna", durationSec: 0 },
-  } as MainNode,
-  {
-    id: "decision-2-1",
-    type: "decision" as const,
-    position: { x: 820, y: 50 },
-    data: { label: "Wyjdź", deltas: {} },
-  } as DecisionNode,
-  {
-    id: "decision-2-2",
-    type: "decision" as const,
-    position: { x: 820, y: 150 },
-    data: { label: "Walcz", deltas: {} },
-  } as DecisionNode,
-  {
-    id: "main-3",
-    type: "main" as const,
-    position: { x: 1050, y: 50 },
+    id: START_NODE_ID,
+    type: "main",
+    position: { x: 250, y: 250 },
     data: {
-      label: "Wyjście z zamku",
-      condition: { varName: "klucz", op: "gte" as const, value: 1 },
-      durationSec: 0,
+      label: "Start",
+      durationSec: 5,
     },
-  } as MainNode,
-  {
-    id: "main-4",
-    type: "main" as const,
-    position: { x: 1050, y: 150 },
-    data: {
-      label: "Walka ze strażnikiem",
-      condition: { varName: "miecz", op: "gte" as const, value: 1 },
-      durationSec: 0,
-    },
-  } as MainNode,
+  },
 ];
 
-const initialEdges: FlowEdge[] = [
-  { id: "e1-1", source: "main-1", target: "decision-1-1", animated: true },
-  { id: "e1-2", source: "main-1", target: "decision-1-2", animated: true },
-  { id: "e1-1-2", source: "decision-1-1", target: "main-2", animated: true },
-  { id: "e1-2-2", source: "decision-1-2", target: "main-2", animated: true },
-  { id: "e2-1", source: "main-2", target: "decision-2-1", animated: true },
-  { id: "e2-2", source: "main-2", target: "decision-2-2", animated: true },
-  { id: "e2-1-3", source: "decision-2-1", target: "main-3", animated: true },
-  { id: "e2-2-4", source: "decision-2-2", target: "main-4", animated: true },
-];
+const INITIAL_EDGES: FlowEdge[] = [];
 
-// ===== Type Guards =====
+// Type guards
 export function isMainNode(node: FlowNode): node is MainNode {
   return node.type === "main";
 }
@@ -96,181 +85,196 @@ export function isDecisionNode(node: FlowNode): node is DecisionNode {
   return node.type === "decision";
 }
 
-// ===== Store Interface =====
-interface FlowState {
-  nodes: FlowNode[];
-  edges: FlowEdge[];
-  selectedNodeId: string | null;
-
-  // Actions
-  setSelectedNode: (id: string | null) => void;
-  applyNodesChange: OnNodesChange;
-  applyEdgesChange: OnEdgesChange;
-  
-  addMainNode: () => void;
-  deleteNode: (id: string) => void;
-  updateNode: (id: string, data: MainNodeData | DecisionNodeData) => void;
-  
-  insertDecisionBetweenMainNodes: (sourceId: string, targetId: string) => string | null;
-
-  // Selectors
-  getCurrentNode: (currentNodeId: string | null) => FlowNode | undefined;
-  getCurrentDecisions: (currentNodeId: string | null) => DecisionNode[];
-  getSelectedNode: () => FlowNode | undefined;
-}
-
-// ===== Store Implementation =====
-export const useFlowStore = create<FlowState>((set, get) => ({
-  nodes: initialNodes,
-  edges: initialEdges,
+export const useFlowStore = create<FlowStore>((set, get) => ({
+  // Initial state
+  projectTitle: "Nowy Projekt",
+  projectDescription: "",
+  nodes: INITIAL_NODES,
+  edges: INITIAL_EDGES,
   selectedNodeId: null,
+  nextNodeId: 2,
 
-  setSelectedNode: (id) => set({ selectedNodeId: id }),
+  // Project metadata actions
+  setProjectTitle: (title) => set({ projectTitle: title }),
+  setProjectDescription: (description) => set({ projectDescription: description }),
 
-  applyNodesChange: (changes) =>
-    set((state) => {
-      // Use a more generic type for ReactFlow's applyNodeChanges
-      const updatedNodes = applyNodeChanges(changes, state.nodes as Node[]);
-      // Cast back to our specific types
-      return { nodes: updatedNodes as FlowNode[] };
-    }),
-    
-  applyEdgesChange: (changes) =>
-    set((state) => {
-      const updatedEdges = applyEdgeChanges(changes, state.edges as Edge[]);
-      return { edges: updatedEdges as FlowEdge[] };
-    }),
-
-  addMainNode: () => {
-    const { nodes } = get();
-    const mainNodes = nodes.filter(isMainNode);
-    const lastMain = mainNodes.sort((a, b) => b.position.x - a.position.x)[0];
-    
-    const id = `main-${Date.now()}`;
-    const newNode: MainNode = {
-      id,
-      type: "main",
-      position: {
-        x: (lastMain?.position.x ?? 0) + 300,
-        y: lastMain?.position.y ?? 100,
-      },
-      data: { label: "Nowy blok", durationSec: 0 },
-    };
-    
-    set({ nodes: [...nodes, newNode], selectedNodeId: id });
+  // Node/Edge actions
+  applyNodesChange: (changes) => {
+    set((state) => ({
+      nodes: applyNodeChanges(changes, state.nodes),
+    }));
   },
 
-  deleteNode: (id) => {
-    const { nodes, edges } = get();
-    const node = nodes.find((n) => n.id === id);
-    if (!node) return;
+  applyEdgesChange: (changes) => {
+    set((state) => ({
+      edges: applyEdgeChanges(changes, state.edges),
+    }));
+  },
 
-    if (isDecisionNode(node)) {
-      set({
-        nodes: nodes.filter((n) => n.id !== id),
-        edges: edges.filter((e) => e.source !== id && e.target !== id),
-        selectedNodeId: null,
-      });
-      return;
-    }
+  setSelectedNode: (nodeId) => {
+    set({ selectedNodeId: nodeId });
+  },
 
-    // Delete main node + connected decision nodes
-    const connectedDecisions = edges
-      .filter((e) => e.source === id || e.target === id)
-      .map((e) => (e.source === id ? e.target : e.source))
-      .filter((decId) => {
-        const decNode = nodes.find((n) => n.id === decId);
-        return decNode && isDecisionNode(decNode);
-      });
-
-    const toDelete = new Set([id, ...connectedDecisions]);
-    
-    set({
-      nodes: nodes.filter((n) => !toDelete.has(n.id)),
-      edges: edges.filter(
-        (e) => !toDelete.has(e.source) && !toDelete.has(e.target)
-      ),
-      selectedNodeId: null,
+  addMainNode: () => {
+    set((state) => {
+      const newNode: MainNode = {
+        id: `main-${state.nextNodeId}`,
+        type: "main",
+        position: { x: 400, y: 250 + state.nodes.length * 100 },
+        data: {
+          label: `Blok ${state.nextNodeId}`,
+          durationSec: 5,
+        },
+      };
+      return {
+        nodes: [...state.nodes, newNode],
+        nextNodeId: state.nextNodeId + 1,
+        selectedNodeId: newNode.id,
+      };
     });
   },
 
-  updateNode: (id, data) =>
+  deleteNode: (nodeId) => {
+    if (nodeId === START_NODE_ID) return;
+    
     set((state) => ({
-      nodes: state.nodes.map((n) => {
-        if (n.id !== id) return n;
-        
-        // Preserve the node type when updating
-        if (isMainNode(n)) {
-          return { ...n, data: data as MainNodeData } as MainNode;
-        } else {
-          return { ...n, data: data as DecisionNodeData } as DecisionNode;
-        }
+      nodes: state.nodes.filter((n) => n.id !== nodeId),
+      edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+      selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId,
+    }));
+  },
+
+  updateNode: (nodeId, data) => {
+    set((state) => ({
+      nodes: state.nodes.map((node) => {
+        if (node.id !== nodeId) return node;
+        return { ...node, data } as FlowNode;
       }),
-    })),
+    }));
+  },
 
   insertDecisionBetweenMainNodes: (sourceId, targetId) => {
-    const { nodes, edges } = get();
-    const sourceNode = nodes.find((n) => n.id === sourceId);
-    const targetNode = nodes.find((n) => n.id === targetId);
+    const state = get();
     
-    if (!sourceNode || !targetNode) return null;
-    if (!isMainNode(sourceNode) || !isMainNode(targetNode)) return null;
-    if (sourceNode.position.x >= targetNode.position.x) return null;
-
-    const decisionCount = nodes.filter(isDecisionNode).length;
-    const decisionId = `decision-${Date.now()}`;
+    // Check if both nodes are main nodes
+    const sourceNode = state.nodes.find((n) => n.id === sourceId);
+    const targetNode = state.nodes.find((n) => n.id === targetId);
     
+    if (!sourceNode || !targetNode || !isMainNode(sourceNode) || !isMainNode(targetNode)) {
+      return null;
+    }
+    
+    // Check if edge already exists
+    const existingEdge = state.edges.find(
+      (e) => e.source === sourceId && e.target === targetId
+    );
+    if (existingEdge) return null;
+    
+    // Create decision node
+    const decisionId = `decision-${state.nextNodeId}`;
     const decisionNode: DecisionNode = {
       id: decisionId,
       type: "decision",
       position: {
         x: (sourceNode.position.x + targetNode.position.x) / 2,
-        y: sourceNode.position.y + edges.filter((e) => e.source === sourceId).length * 60,
+        y: (sourceNode.position.y + targetNode.position.y) / 2,
       },
       data: {
-        label: `Decyzja ${decisionCount + 1}`,
+        label: "Decyzja",
         deltas: {},
       },
     };
-
+    
+    // Create edges
     const edge1: FlowEdge = {
-      id: `e-${sourceId}-${decisionId}`,
+      id: `${sourceId}-${decisionId}`,
       source: sourceId,
       target: decisionId,
-      animated: true,
     };
-
+    
     const edge2: FlowEdge = {
-      id: `e-${decisionId}-${targetId}`,
+      id: `${decisionId}-${targetId}`,
       source: decisionId,
       target: targetId,
-      animated: true,
     };
-
+    
     set({
-      nodes: [...nodes, decisionNode],
-      edges: [...edges, edge1, edge2],
-      selectedNodeId: decisionId,
+      nodes: [...state.nodes, decisionNode],
+      edges: [...state.edges, edge1, edge2],
+      nextNodeId: state.nextNodeId + 1,
     });
-
+    
     return decisionId;
   },
 
-  getCurrentNode: (currentNodeId) =>
-    currentNodeId ? get().nodes.find((n) => n.id === currentNodeId) : undefined,
-
-  getCurrentDecisions: (currentNodeId) => {
-    const { nodes, edges } = get();
-    if (!currentNodeId) return [];
+  // Export project to JSON format
+  exportProject: () => {
+    const state = get();
+    const gameState = useGameStore.getState();
     
-    return edges
-      .filter((e) => e.source === currentNodeId)
-      .map((e) => nodes.find((n) => n.id === e.target))
-      .filter((n): n is DecisionNode => n !== undefined && isDecisionNode(n));
+    const projectData: ProjectData = {
+      title: state.projectTitle,
+      description: state.projectDescription,
+      variables: gameState.variables,
+      nodes: state.nodes,
+      edges: state.edges,
+      version: PROJECT_VERSION,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    
+    return projectData;
   },
 
-  getSelectedNode: () => {
-    const { nodes, selectedNodeId } = get();
-    return selectedNodeId ? nodes.find((n) => n.id === selectedNodeId) : undefined;
+  // Import project from JSON format
+  importProject: (data: ProjectData) => {
+    // Validate version compatibility
+    if (data.version && !data.version.startsWith("1.")) {
+      throw new Error(`Niekompatybilna wersja projektu: ${data.version}`);
+    }
+    
+    // Update flow store
+    set({
+      projectTitle: data.title || "Zaimportowany Projekt",
+      projectDescription: data.description || "",
+      nodes: data.nodes || [],
+      edges: data.edges || [],
+      selectedNodeId: null,
+      // Calculate next node ID
+      nextNodeId: Math.max(
+        2,
+        ...data.nodes.map(n => {
+          const match = n.id.match(/\d+$/);
+          return match ? parseInt(match[0]) + 1 : 2;
+        })
+      ),
+    });
+    
+    // Update game store variables
+    const gameStore = useGameStore.getState();
+    gameStore.setVariables(() => data.variables || []);
+    
+    // Reset game state
+    gameStore.stopPlay();
+  },
+
+  // Reset to initial state
+  resetProject: () => {
+    set({
+      projectTitle: "Nowy Projekt",
+      projectDescription: "",
+      nodes: INITIAL_NODES,
+      edges: INITIAL_EDGES,
+      selectedNodeId: null,
+      nextNodeId: 2,
+    });
+    
+    // Reset game store
+    const gameStore = useGameStore.getState();
+    gameStore.stopPlay();
+    gameStore.setVariables(() => [
+      { name: "zdrowie", value: 10, initialValue: 10, min: 0, max: 20 },
+      { name: "energia", value: 5, initialValue: 5, min: 0, max: 10 },
+    ]);
   },
 }));

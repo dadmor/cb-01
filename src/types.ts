@@ -1,8 +1,28 @@
 // ------ src/types.ts ------
-import { Node, Edge, NodeProps, Connection } from "reactflow";
+import { Node, Edge } from "reactflow";
 
-// ===== Game Types =====
-export type Mode = "edit" | "play";
+// Extended Variable with initial value
+export interface Variable {
+  name: string;
+  value: number;
+  initialValue: number;
+  min?: number;
+  max?: number;
+}
+
+// Project format for import/export
+export interface ProjectData {
+  title: string;
+  description?: string;
+  variables: Variable[];
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  version: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Conditions
 export type Op = "lt" | "lte" | "eq" | "neq" | "gte" | "gt";
 
 export interface Condition {
@@ -11,24 +31,13 @@ export interface Condition {
   value: number;
 }
 
-export interface Variable {
-  name: string;
-  value: number;
-  min?: number;
-  max?: number;
-}
-
-export type VariablesArray = Variable[];
-export type Bounds = { min?: number; max?: number };
-export type DeltasRecord = Record<string, number>;
-
-// ===== Node Data Types =====
+// Node data types
 export interface MainNodeData {
   label: string;
   durationSec: number;
   condition?: Condition;
   defaultDecisionId?: string;
-  // Runtime data (added by FlowCanvas)
+  // Runtime state (added by FlowCanvas)
   isUnlocked?: boolean;
   isCurrent?: boolean;
   remainingMs?: number;
@@ -36,40 +45,33 @@ export interface MainNodeData {
 
 export interface DecisionNodeData {
   label: string;
-  deltas: DeltasRecord;
-  // Runtime data (added by FlowCanvas)
+  deltas: Record<string, number>;
+  // Runtime state (added by FlowCanvas)
   isAvailable?: boolean;
   onClick?: () => void;
 }
 
-// ===== Node Types =====
+// Node types
 export type MainNode = Node<MainNodeData, "main">;
 export type DecisionNode = Node<DecisionNodeData, "decision">;
 export type FlowNode = MainNode | DecisionNode;
+export type FlowEdge = Edge;
 
-// ===== Edge Types =====
-export interface FlowEdgeData {
-  animated?: boolean;
+// Props types
+export interface MainNodeProps {
+  data: MainNodeData;
+  selected?: boolean;
 }
 
-export type FlowEdge = Edge<FlowEdgeData>;
-
-// ===== Node Props Types (for components) =====
-export interface MainNodeProps extends NodeProps<MainNodeData> {
-  selected: boolean;
+export interface DecisionNodeProps {
+  data: DecisionNodeData;
+  selected?: boolean;
 }
 
-export interface DecisionNodeProps extends NodeProps<DecisionNodeData> {
-  selected: boolean;
-}
-
-// ===== Hook Types =====
+// Function types
 export type IsNodeUnlockedFn = (node: FlowNode) => boolean;
 export type TraverseDecisionFn = (decisionNodeId: string) => void;
 
 export interface NodeRuntimeResult {
   remainingMs: number;
 }
-
-// ===== Helper to extract node data type =====
-export type NodeData<T extends FlowNode> = T extends Node<infer D> ? D : never;

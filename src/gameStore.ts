@@ -1,153 +1,187 @@
 // ------ src/gameStore.ts ------
 import { create } from "zustand";
+import { Variable, Condition } from "./types";
 
-// ===== Types =====
-export type Mode = "edit" | "play";
-
-export type Op = "lt" | "lte" | "eq" | "neq" | "gte" | "gt";
-
-export interface Condition {
-  varName: string;
-  op: Op;
-  value: number;
-}
-
-export interface Variable {
-  name: string;
-  value: number;
-  min?: number;
-  max?: number;
-}
-
-export type VariablesArray = Variable[];
-
-type Bounds = { min?: number; max?: number };
-
-// ===== Variable Helpers (typed) =====
-export const VARIABLES = {
-  get: (vars: VariablesArray, name: string): Variable | undefined =>
-    vars.find((v) => v.name === name),
-
-  upsert: (vars: VariablesArray, name: string, value = 0, bounds?: Bounds): VariablesArray => {
-    const exists = VARIABLES.get(vars, name);
-    if (exists) {
-      return vars.map((v) =>
-        v.name === name
-          ? {
-              ...v,
-              value,
-              min: bounds?.min ?? v.min,
-              max: bounds?.max ?? v.max,
-            }
-          : v
-      );
-    }
-    return [...vars, { name, value, min: bounds?.min, max: bounds?.max }];
-  },
-
-  set: (vars: VariablesArray, name: string, value: number): VariablesArray =>
-    vars.map((v) =>
-      v.name === name ? { ...v, value: VARIABLES.clamp(value, v.min, v.max) } : v
-    ),
-
-  applyDeltas: (vars: VariablesArray, deltas?: Record<string, number>): VariablesArray => {
-    if (!deltas) return vars;
-    let next = [...vars];
-    Object.entries(deltas).forEach(([name, delta]) => {
-      const existing = VARIABLES.get(next, name);
-      if (existing) {
-        next = next.map((v) =>
-          v.name === name
-            ? { ...v, value: VARIABLES.clamp(v.value + delta, v.min, v.max) }
-            : v
-        );
-      } else {
-        next.push({ name, value: delta });
-      }
-    });
-    return next;
-  },
-
-  evaluate: (vars: VariablesArray, cond?: Condition): boolean => {
-    if (!cond) return true;
-    const v = VARIABLES.get(vars, cond.varName);
-    const val = v?.value ?? 0;
-    const ops: Record<Op, boolean> = {
-      lt: val < cond.value,
-      lte: val <= cond.value,
-      eq: val === cond.value,
-      neq: val !== cond.value,
-      gte: val >= cond.value,
-      gt: val > cond.value,
-    };
-    return ops[cond.op];
-  },
-
-  clamp: (value: number, min?: number, max?: number): number => {
-    if (typeof min === "number" && value < min) return min;
-    if (typeof max === "number" && value > max) return max;
-    return value;
-  },
-} as const;
-
-// ===== Game Store (typed) =====
-export interface GameState {
-  mode: Mode;
+interface GameStore {
+  // State
+  mode: "edit" | "play";
   isGameOver: boolean;
-  currentNodeId: string;
-  lastDecision: string;
-  variables: VariablesArray;
-  initialVariables: VariablesArray;
+  currentNodeId: string | null;
+  lastDecisionLabel: string | null;
+  variables: Variable[];
 
-  setMode: (m: Mode) => void;
-  setGameOver: (v: boolean) => void;
-  setCurrentNode: (id: string, lastDecision?: string) => void;
-  setVariables: (updater: (vars: VariablesArray) => VariablesArray) => void;
-  upsertVariable: (name: string, value?: number, bounds?: Bounds) => void;
-  setVariableValue: (name: string, value: number) => void;
-  takeInitialSnapshot: () => void;
-  reset: (startNodeId: string) => void;
+  // Actions
   startPlay: (startNodeId: string) => void;
   stopPlay: () => void;
+  reset: (startNodeId: string) => void;
+  setCurrentNode: (nodeId: string, decisionLabel?: string) => void;
+  setGameOver: (gameOver: boolean) => void;
+  setVariables: (updater: (vars: Variable[]) => Variable[]) => void;
+  setVariableValue: (name: string, value: number) => void;
+  upsertVariable: (name: string, value: number, initialValue?: number) => void;
+  deleteVariable: (name: string) => void;
 }
 
-export const useGameStore = create<GameState>((set, get) => ({
+// Initial variables with initial values
+const DEFAULT_VARIABLES: Variable[] = [
+  { name: "zdrowie", value: 10, initialValue: 10, min: 0, max: 20 },
+  { name: "energia", value: 5, initialValue: 5, min: 0, max: 10 },
+];
+
+export const useGameStore = create<GameStore>((set) => ({
+  // Initial state
   mode: "edit",
   isGameOver: false,
-  currentNodeId: "",
-  lastDecision: "—",
-  variables: [
-    { name: "klucz", value: 0, min: 0 },
-    { name: "miecz", value: 0, min: 0 },
-  ],
-  initialVariables: [],
+  currentNodeId: null,
+  lastDecisionLabel: null,
+  variables: DEFAULT_VARIABLES,
 
-  setMode: (m) => set({ mode: m }),
-  setGameOver: (v) => set({ isGameOver: v }),
-  setCurrentNode: (id, lastDecision) =>
-    set({
-      currentNodeId: id,
-      lastDecision: lastDecision ?? get().lastDecision,
-    }),
-  setVariables: (updater) => set((s) => ({ variables: updater(s.variables) })),
-  upsertVariable: (name, value = 0, bounds) =>
-    set((s) => ({ variables: VARIABLES.upsert(s.variables, name, value, bounds) })),
-  setVariableValue: (name, value) =>
-    set((s) => ({ variables: VARIABLES.set(s.variables, name, value) })),
-  takeInitialSnapshot: () =>
-    set((s) => ({ initialVariables: s.variables.map((v) => ({ ...v })) })),
-  reset: (startNodeId) =>
-    set((s) => ({
-      variables: s.initialVariables.map((v) => ({ ...v })),
-      currentNodeId: startNodeId,
-      lastDecision: "—",
-      isGameOver: false,
-    })),
+  // Start playing from a specific node
   startPlay: (startNodeId) => {
-    const s = get();
-    set({ mode: "play", initialVariables: s.variables.map((v) => ({ ...v })) });
-    get().reset(startNodeId);
+    set((state) => ({
+      mode: "play",
+      isGameOver: false,
+      currentNodeId: startNodeId,
+      lastDecisionLabel: null,
+      // Reset variables to initial values when starting
+      variables: state.variables.map((v) => ({ ...v, value: v.initialValue })),
+    }));
   },
-  stopPlay: () => set({ mode: "edit", isGameOver: false }),
+
+  // Stop playing and return to edit mode
+  stopPlay: () => {
+    set({
+      mode: "edit",
+      isGameOver: false,
+      currentNodeId: null,
+      lastDecisionLabel: null,
+    });
+  },
+
+  // Reset game to start node with initial variable values
+  reset: (startNodeId) => {
+    set((state) => ({
+      mode: "play",
+      isGameOver: false,
+      currentNodeId: startNodeId,
+      lastDecisionLabel: null,
+      // Reset variables to initial values
+      variables: state.variables.map((v) => ({ ...v, value: v.initialValue })),
+    }));
+  },
+
+  // Update current node
+  setCurrentNode: (nodeId, decisionLabel) => {
+    set({
+      currentNodeId: nodeId,
+      lastDecisionLabel: decisionLabel,
+    });
+  },
+
+  // Set game over state
+  setGameOver: (gameOver) => {
+    set({ isGameOver: gameOver });
+  },
+
+  // Update variables with constraints
+  setVariables: (updater) => {
+    set((state) => ({
+      variables: updater(state.variables).map((v) => {
+        let value = v.value;
+        if (v.min !== undefined) value = Math.max(v.min, value);
+        if (v.max !== undefined) value = Math.min(v.max, value);
+        return { ...v, value };
+      }),
+    }));
+  },
+
+  // Update single variable value (for edit mode)
+  setVariableValue: (name, value) => {
+    set((state) => ({
+      variables: state.variables.map((v) => {
+        if (v.name !== name) return v;
+        const newValue = v.min !== undefined ? Math.max(v.min, value) : value;
+        const finalValue =
+          v.max !== undefined ? Math.min(v.max, newValue) : newValue;
+        return { ...v, value: finalValue };
+      }),
+    }));
+  },
+
+  // Add or update variable (for edit mode)
+  upsertVariable: (name, value, initialValue) => {
+    set((state) => {
+      const existing = state.variables.find((v) => v.name === name);
+      if (existing) {
+        return {
+          variables: state.variables.map((v) =>
+            v.name === name
+              ? { ...v, value, initialValue: initialValue ?? value }
+              : v
+          ),
+        };
+      }
+      return {
+        variables: [
+          ...state.variables,
+          { name, value, initialValue: initialValue ?? value },
+        ],
+      };
+    });
+  },
+
+  // Remove variable (for edit mode)
+  deleteVariable: (name) => {
+    set((state) => ({
+      variables: state.variables.filter((v) => v.name !== name),
+    }));
+  },
 }));
 
+// Variable utilities
+export const VARIABLES = {
+  evaluate: (variables: Variable[], condition?: Condition): boolean => {
+    if (!condition) return true;
+
+    const variable = variables.find((v) => v.name === condition.varName);
+    if (!variable) return false;
+
+    const { value } = variable;
+    const target = condition.value;
+
+    switch (condition.op) {
+      case "lt":
+        return value < target;
+      case "lte":
+        return value <= target;
+      case "eq":
+        return value === target;
+      case "neq":
+        return value !== target;
+      case "gte":
+        return value >= target;
+      case "gt":
+        return value > target;
+      default:
+        return false;
+    }
+  },
+
+  applyDeltas: (
+    variables: Variable[],
+    deltas?: Record<string, number>
+  ): Variable[] => {
+    if (!deltas) return variables;
+
+    return variables.map((v) => {
+      const delta = deltas[v.name] ?? 0;
+      if (delta === 0) return v;
+
+      let newValue = v.value + delta;
+      if (v.min !== undefined) newValue = Math.max(v.min, newValue);
+      if (v.max !== undefined) newValue = Math.min(v.max, newValue);
+
+      return { ...v, value: newValue };
+    });
+  },
+};
