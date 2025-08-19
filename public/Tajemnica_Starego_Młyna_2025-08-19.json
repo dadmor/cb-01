@@ -1,0 +1,1086 @@
+{
+  "title": "Tajemnica Starego Młyna",
+  "description": "Mroczna opowieść detektywistyczna w małym miasteczku, gdzie każda decyzja ma znaczenie",
+  "variables": [
+    {
+      "name": "zdrowie",
+      "value": 90,
+      "initialValue": 100,
+      "min": 0,
+      "max": 100
+    },
+    {
+      "name": "reputacja",
+      "value": 70,
+      "initialValue": 50,
+      "min": 0,
+      "max": 100
+    },
+    {
+      "name": "dowody",
+      "value": 2,
+      "initialValue": 0,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "zaufanie_burmistrza",
+      "value": -5,
+      "initialValue": 0,
+      "min": -10,
+      "max": 10
+    },
+    {
+      "name": "wiedza_o_kulcie",
+      "value": 0,
+      "initialValue": 0,
+      "min": 0,
+      "max": 5
+    },
+    {
+      "name": "latarka",
+      "value": 0,
+      "initialValue": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "klucz_do_piwnicy",
+      "value": 0,
+      "initialValue": 0,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": "main-1",
+      "type": "main",
+      "position": {
+        "x": 64,
+        "y": 256
+      },
+      "data": {
+        "label": "Przyjazd do Czarnego Dębu",
+        "durationSec": 10,
+        "defaultDecisionId": "decision-2",
+        "description": "Mgła opadła na Czarny Dąb niczym całun, spowijając miasteczko w wilgotnych objęciach. Twój samochód zatrzymuje się na rynku, a silnik gaśnie z westchnieniem ulgi po długiej podróży. List od burmistrza pali w kieszeni - 'Potrzebujemy kogoś z zewnątrz. Zaginięcia się mnożą, a miejscowa policja jest... nieskuteczna.' Stary młyn wznosi się na wzgórzu jak ponury strażnik, jego nieruchome skrzydła rzucają długie cienie w świetle zachodzącego słońca. Czujesz, że czas jest istotny."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 64,
+        "y": 256
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-2",
+      "type": "decision",
+      "position": {
+        "x": 448,
+        "y": 176
+      },
+      "data": {
+        "label": "Idź prosto do młyna",
+        "deltas": {
+          "reputacja": -5
+        }
+      },
+      "width": 146,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 448,
+        "y": 176
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-3",
+      "type": "decision",
+      "position": {
+        "x": 448,
+        "y": 688
+      },
+      "data": {
+        "label": "Najpierw odwiedź burmistrza",
+        "deltas": {
+          "reputacja": 10,
+          "zaufanie_burmistrza": 2
+        }
+      },
+      "width": 199,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 448,
+        "y": 688
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-4",
+      "type": "main",
+      "position": {
+        "x": 672,
+        "y": 144
+      },
+      "data": {
+        "label": "Stary Młyn - Dzień",
+        "durationSec": 15,
+        "defaultDecisionId": "decision-9",
+        "description": "Drzwi młyna skrzypią złowieszczo, jakby protestowały przeciwko twojej obecności. Wewnątrz panuje półmrok, a promienie słońca przebijające przez dziury w dachu oświetlają tańczące w powietrzu drobiny kurzu. Podłoga jest pokryta dziwnymi śladami - część z nich wygląda na ludzkie stopy, ale inne... inne są zbyt duże i mają niewłaściwą liczbę palców. W rogu dostrzegasz ciemną plamę, która podejrzanie przypomina zaschniętą krew. Schody prowadzące na piętro kuszą tajemnicą, ale bez odpowiedniego oświetlenia mogą być niebezpieczne."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 672,
+        "y": 144
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-5",
+      "type": "main",
+      "position": {
+        "x": 688,
+        "y": 656
+      },
+      "data": {
+        "label": "Gabinet Burmistrza",
+        "durationSec": 20,
+        "defaultDecisionId": "decision-6",
+        "description": "Burmistrz Kowalski wygląda na człowieka, który nie spał od tygodni. Jego gabinet pachnie starym tytoniem i rozpaczą. Na ścianie wisi mapa Czarnego Dębu z czerwonymi pinezkami oznaczającymi miejsca zaginięć - wszystkie skupione wokół starego młyna. 'Dziękuję, że przyjechałeś' - jego głos drży lekko. 'Zaginęło już siedem osób. Policja twierdzi, że to przypadek, ale ja... ja pamiętam opowieści mojej babki. O tym, co działo się w młynie przed wojną. O rytuale, który poszedł nie tak.' Pochyla się konspiracyjnie. 'Niektórzy w mieście wiedzą więcej, niż mówią.'"
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 688,
+        "y": 656
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-6",
+      "type": "decision",
+      "position": {
+        "x": 1040,
+        "y": 640
+      },
+      "data": {
+        "label": "Wypytaj o historię młyna",
+        "deltas": {
+          "wiedza_o_kulcie": 1,
+          "dowody": 1
+        }
+      },
+      "width": 173,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1040,
+        "y": 640
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-7",
+      "type": "decision",
+      "position": {
+        "x": 1040,
+        "y": 736
+      },
+      "data": {
+        "label": "Poproś o klucz do piwnicy",
+        "deltas": {
+          "klucz_do_piwnicy": 1,
+          "zaufanie_burmistrza": -1
+        }
+      },
+      "width": 179,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1040,
+        "y": 736
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-8",
+      "type": "main",
+      "position": {
+        "x": 1408,
+        "y": 608
+      },
+      "data": {
+        "label": "Tajemnicza przeszłość",
+        "durationSec": 12,
+        "defaultDecisionId": "decision-28",
+        "description": "Burmistrz waha się przez moment, jakby ważył każde słowo. 'W 1923 roku w młynie działała sekta. Nazywali siebie Dziećmi Czarnego Słońca. Mój dziadek był młynarzem i... był jednym z nich.' Wyciąga z szuflady pożółkłe zdjęcie przedstawiające grupę ludzi w kapturach. 'Próbowali przywołać coś z innych wymiarów. Coś poszło nie tak - znaleziono trzynaście ciał, wszystkie... zmienione. Młyn zamknięto, ale co siedem lat ktoś znika.' Patrzy ci prosto w oczy. 'Mamy 2025 rok. Dokładnie siedem lat od ostatnich zaginięć.'"
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1408,
+        "y": 608
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-9",
+      "type": "decision",
+      "position": {
+        "x": 1056,
+        "y": 176
+      },
+      "data": {
+        "label": "Zbadaj ślady krwi",
+        "deltas": {
+          "dowody": 2,
+          "zdrowie": -10
+        }
+      },
+      "width": 131,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1056,
+        "y": 176
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-10",
+      "type": "decision",
+      "position": {
+        "x": 1056,
+        "y": 96
+      },
+      "data": {
+        "label": "Przeszukaj biuro na piętrze",
+        "deltas": {
+          "dowody": 1,
+          "latarka": 1
+        }
+      },
+      "width": 186,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1056,
+        "y": 96
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-11",
+      "type": "main",
+      "position": {
+        "x": 1408,
+        "y": 96
+      },
+      "data": {
+        "label": "Mroczne odkrycie",
+        "durationSec": 8,
+        "defaultDecisionId": "decision-29",
+        "description": "Krew prowadzi cię do ukrytych drzwi za starym żarnem. Wewnątrz znajdujesz małe pomieszczenie wypełnione dziwacznymi artefaktami - kości ułożone w geometryczne wzory, księgi oprawione w coś, co wygląda niepokojąco jak ludzka skóra, oraz dziennik z ostatnim wpisem sprzed tygodnia: 'Gwiazdy są w odpowiedniej pozycji. Czarne Słońce wschodzi ponownie. Tym razem się uda.' Na ścianie wisi lista nazwisk - wszystkie przekreślone oprócz trzech. Rozpoznajesz nazwiska zaginionych. Ostatnie trzy to prominentni mieszkańcy miasta, włączając miejscowego proboszcza."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1408,
+        "y": 96
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-12",
+      "type": "main",
+      "position": {
+        "x": 2096,
+        "y": 368
+      },
+      "data": {
+        "label": "Piwnica młyna - Noc",
+        "durationSec": 25,
+        "defaultDecisionId": "decision-13",
+        "description": "Schodząc do piwnicy, słyszysz monotonne śpiewy. Powietrze jest gęste od dymu kadzidła i czegoś jeszcze - metalicznego zapachu świeżej krwi. W centrum pomieszczenia stoi kamienny ołtarz pokryty dziwnymi symbolami, które zdają się poruszać w migotliwym świetle świec. Wokół niego zgromadzeni są zakapturzeni kultyści - rozpoznajesz głos proboszcza prowadzącego rytuał. Na ołtarzu leży związana postać - to Anna Nowak, ostatnia zaginiona. Jest żywa, ale jej oczy są szeroko otwarte z przerażenia. Coś zaczyna materializować się nad ołtarzem - coś, co nie powinno istnieć w tym świecie."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2096,
+        "y": 368
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-13",
+      "type": "decision",
+      "position": {
+        "x": 2400,
+        "y": 512
+      },
+      "data": {
+        "label": "Skonfrontuj kultystów",
+        "deltas": {
+          "zdrowie": -30,
+          "reputacja": 20,
+          "dowody": 3
+        }
+      },
+      "width": 157,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2400,
+        "y": 512
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-14",
+      "type": "decision",
+      "position": {
+        "x": 2400,
+        "y": 400
+      },
+      "data": {
+        "label": "Ukryj się i obserwuj",
+        "deltas": {
+          "wiedza_o_kulcie": 3,
+          "dowody": 2
+        }
+      },
+      "width": 143,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2400,
+        "y": 400
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-15",
+      "type": "main",
+      "position": {
+        "x": 2624,
+        "y": 480
+      },
+      "data": {
+        "label": "Walka o życie",
+        "durationSec": 15,
+        "defaultDecisionId": "decision-30",
+        "description": "Chaos wybucha w piwnicy. Kultyści rzucają się na ciebie z szaleńczą furią, ich oczy płonące fanatycznym oddaniem. Walczysz zaciekle, używając wszystkiego, co masz pod ręką. Proboszcz krzyczy rozkazy, próbując dokończyć rytuał. Anna Nowak szarpie się w więzach, jej krzyki mieszają się z nieludzkim wyciem dobiegającym z portalu. Czujesz, jak coś próbuje wedrzeć się do twojego umysłu - szepty obiecujące wiedzę i potęgę, jeśli tylko przestaniesz walczyć. Musisz działać szybko, zanim będzie za późno."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2624,
+        "y": 480
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-16",
+      "type": "main",
+      "position": {
+        "x": 2624,
+        "y": 368
+      },
+      "data": {
+        "label": "Rytuał Przywołania",
+        "durationSec": 30,
+        "defaultDecisionId": "decision-17",
+        "description": "Z ukrycia obserwujesz, jak rytuał osiąga punkt kulminacyjny. Portal nad ołtarzem pulsuje hipnotyzującym, fioletowym światłem. Przez szczelinę między wymiarami zaczyna przepychać się coś potwornego - masa macek i oczu, która nie podlega prawom fizyki. Kultyści padają na kolana, mamrocząc modlitwy w języku, który rani twoje uszy. Proboszcz unosi rytualny sztylet nad Anną - 'Przez jej krew, Czarne Słońce zaświeci nad światem!' Rozumiesz, że masz tylko jedną szansę, by przerwać rytuał. Ale czy starczy ci odwagi?"
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2624,
+        "y": 368
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-17",
+      "type": "decision",
+      "position": {
+        "x": 2928,
+        "y": 288
+      },
+      "data": {
+        "label": "Przerwij rytuał",
+        "deltas": {
+          "zdrowie": -50,
+          "reputacja": 30
+        }
+      },
+      "width": 128,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2928,
+        "y": 288
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-18",
+      "type": "decision",
+      "position": {
+        "x": 2928,
+        "y": 400
+      },
+      "data": {
+        "label": "Uciekaj po pomoc",
+        "deltas": {
+          "reputacja": -20,
+          "zdrowie": -10
+        }
+      },
+      "width": 134,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2928,
+        "y": 400
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-19",
+      "type": "main",
+      "position": {
+        "x": 3376,
+        "y": 256
+      },
+      "data": {
+        "label": "Bohater Czarnego Dębu",
+        "durationSec": 0,
+        "description": "Poranne słońce wstaje nad Czarnym Dębem, rozpraszając cienie nocy. Stoisz przed ratuszem, otoczony wdzięcznymi mieszkańcami. Kult został rozbity, jego członkowie aresztowani, a mroczne tajemnice młyna ujawnione. Anna Nowak, choć wstrząśnięta, przeżyła. Burmistrz ściska twoją dłoń ze łzami w oczach. 'Uratowałeś nas wszystkich. Czarne Słońce nie powstanie.' Młyn zostanie zburzony, a na jego miejscu powstanie park pamięci ofiar. Opuszczasz miasto jako bohater, wiedząc, że niektóre cienie zostały na zawsze przepędzone. Ale gdzieś w głębi duszy wiesz, że zło nigdy nie śpi - tylko czeka."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 3376,
+        "y": 256
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-20",
+      "type": "main",
+      "position": {
+        "x": 3376,
+        "y": 368
+      },
+      "data": {
+        "label": "Wygnanie",
+        "durationSec": 0,
+        "description": "Uciekasz z Czarnego Dębu pod osłoną nocy, ścigany przez wściekłe spojrzenia mieszkańców. Twoja porażka w powstrzymaniu kultu sprawiła, że miasto pogrążyło się w chaosie. Niektórzy szepczą, że byłeś z nimi w zmowie, inni - że jesteś tchórzem. Portal w młynie pozostaje otwarty, a mroczne istoty zaczynają przenikać do naszego świata. W lusterku wstecznym widzisz łunę pożaru - to płonie młyn, podpalony przez przerażonych mieszkańców w desperackiej próbie powstrzymania koszmaru. Wiesz, że nigdy nie zapomnisz krzyków dochodzących z miasta. Niektóre porażki ciążą na duszy do końca życia."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 3376,
+        "y": 368
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-21",
+      "type": "main",
+      "position": {
+        "x": 3376,
+        "y": 480
+      },
+      "data": {
+        "label": "Mroczna Prawda",
+        "durationSec": 0,
+        "description": "Dowody, które zebrałeś, odsłaniają przerażającą prawdę - kult Dzieci Czarnego Słońca nigdy nie zniknął. Przez dekady infiltrowali każdą instytucję w Czarnym Dębie. Burmistrz, policja, kościół - wszyscy są częścią wielkiego planu. Zaginięcia były tylko przygotowaniem do ostatecznego rytuału. Publikujesz wszystko w internecie, wywołując ogólnokrajowy skandal. Służby specjalne otaczają miasto, a mroczna sieć zostaje rozerwana. Stoisz jako świadek w procesie stulecia, twoje zeznania wysyłając dziesiątki kultystów za kraty. Czarny Dąb nigdy nie będzie już taki sam, ale przynajmniej prawda ujrzała światło dzienne."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 3376,
+        "y": 480
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-22",
+      "type": "decision",
+      "position": {
+        "x": 1792,
+        "y": 48
+      },
+      "data": {
+        "label": "Wezwij policję",
+        "deltas": {
+          "reputacja": 15,
+          "zaufanie_burmistrza": -5
+        }
+      },
+      "width": 128,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1792,
+        "y": 48
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-23",
+      "type": "main",
+      "position": {
+        "x": 2096,
+        "y": 64
+      },
+      "data": {
+        "label": "Obława policyjna",
+        "durationSec": 20,
+        "defaultDecisionId": "decision-31",
+        "description": "Syreny policyjne rozdzierają nocną ciszę Czarnego Dębu. Funkcjonariusze z jednostki specjalnej otaczają młyn, ich latarki tańczą w ciemności jak rojące się świetliki. Prowadzisz ich do piwnicy, gdzie zastajecie przerażonych kultystów próbujących zniszczyć dowody. Proboszcz zostaje aresztowany z księgą rytuałów w rękach, jego maska pobożności ostatecznie opada. W świetle jupiterów młyn wygląda jeszcze bardziej złowieszczo - ściany pokryte symbolami, które zdają się wić w migoczącym świetle. Dowódca operacji klepie cię po ramieniu. 'Dobra robota, detektywie. Bez ciebie nigdy byśmy ich nie złapali.'"
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2096,
+        "y": 64
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-24",
+      "type": "decision",
+      "position": {
+        "x": 448,
+        "y": 496
+      },
+      "data": {
+        "label": "Odwiedź miejscowy bar",
+        "deltas": {
+          "reputacja": 5,
+          "wiedza_o_kulcie": 1,
+          "zdrowie": -5
+        }
+      },
+      "width": 167,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 448,
+        "y": 496
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-25",
+      "type": "main",
+      "position": {
+        "x": 672,
+        "y": 464
+      },
+      "data": {
+        "label": "Plotki w 'Krwawym Kuflu'",
+        "durationSec": 15,
+        "defaultDecisionId": "decision-26",
+        "description": "Bar 'Krwawy Kufel' tętni życiem pomimo późnej godziny. Dym papierosowy wisi w powietrzu jak gęsta mgła, a miejscowi rzucają ci podejrzliwe spojrzenia. Barman, postawny mężczyzna z bliznami na rękach, nalewa ci whisky bez pytania. 'Obcy w mieście, co? I pewnie interesuje cię młyn.' Pochyla się konspiracyjnie. 'Słuchaj, są rzeczy, o których się tu nie mówi. Ale za odpowiednią cenę...' W kącie dostrzegasz grupkę mężczyzn grających w karty. Jeden z nich nosi dziwny medalion z symbolem czarnego słońca. Napięcie w powietrzu można kroić nożem."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 672,
+        "y": 464
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-26",
+      "type": "decision",
+      "position": {
+        "x": 1040,
+        "y": 496
+      },
+      "data": {
+        "label": "Zapłać za informacje",
+        "deltas": {
+          "dowody": 1,
+          "wiedza_o_kulcie": 1
+        }
+      },
+      "width": 150,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1040,
+        "y": 496
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-27",
+      "type": "decision",
+      "position": {
+        "x": 1040,
+        "y": 400
+      },
+      "data": {
+        "label": "Sprowokuj bójkę",
+        "deltas": {
+          "zdrowie": -20,
+          "reputacja": -10,
+          "klucz_do_piwnicy": 1
+        }
+      },
+      "width": 128,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1040,
+        "y": 400
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-28",
+      "type": "decision",
+      "position": {
+        "x": 1712,
+        "y": 640
+      },
+      "data": {
+        "label": "Idź zbadać piwnicę młyna",
+        "deltas": {}
+      },
+      "width": 178,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1712,
+        "y": 640
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-29",
+      "type": "decision",
+      "position": {
+        "x": 1792,
+        "y": 128
+      },
+      "data": {
+        "label": "Zgłoś odkrycie policji",
+        "deltas": {}
+      },
+      "width": 151,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1792,
+        "y": 128
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-30",
+      "type": "decision",
+      "position": {
+        "x": 2928,
+        "y": 512
+      },
+      "data": {
+        "label": "Ujawnij prawdę o kulcie",
+        "deltas": {
+          "reputacja": 10
+        }
+      },
+      "width": 167,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2928,
+        "y": 512
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-31",
+      "type": "decision",
+      "position": {
+        "x": 2928,
+        "y": 96
+      },
+      "data": {
+        "label": "Zeznaj jako świadek",
+        "deltas": {
+          "reputacja": 10
+        }
+      },
+      "width": 146,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2928,
+        "y": 96
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-32",
+      "type": "decision",
+      "position": {
+        "x": 1056,
+        "y": 256
+      },
+      "data": {
+        "label": "Wyjdź i wróć później z przygotowaniem",
+        "deltas": {}
+      },
+      "width": 254,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1056,
+        "y": 256
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-33",
+      "type": "main",
+      "position": {
+        "x": 1408,
+        "y": 224
+      },
+      "data": {
+        "label": "Przygotowanie do konfrontacji",
+        "durationSec": 10,
+        "defaultDecisionId": "decision-34",
+        "description": "Wracasz do miasta, zdając sobie sprawę, że potrzebujesz lepszego przygotowania. W miejscowym sklepie kupujesz latarkę, linę i kilka innych przydatnych przedmiotów. Rozważasz swoje opcje - możesz teraz wrócić do burmistrza, poszukać sojuszników w barze, lub wrócić do młyna lepiej wyposażony. Słońce powoli zachodzi, a ty wiesz, że czas ucieka."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1408,
+        "y": 224
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-34",
+      "type": "decision",
+      "position": {
+        "x": 1440,
+        "y": -320
+      },
+      "data": {
+        "label": "Kup latarkę i wróć do młyna",
+        "deltas": {
+          "latarka": 1
+        }
+      },
+      "width": 190,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 1440,
+        "y": -320
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-35",
+      "type": "main",
+      "position": {
+        "x": 2096,
+        "y": -352
+      },
+      "data": {
+        "label": "Stary Młyn - Noc z latarką",
+        "durationSec": 15,
+        "condition": {
+          "varName": "latarka",
+          "op": "eq",
+          "value": 1
+        },
+        "defaultDecisionId": "decision-10",
+        "description": "Z latarką w ręku wracasz do młyna. Teraz możesz bezpiecznie eksplorować ciemne zakamarki budynku. Światło latarki wydobywa z mroku szczegóły, których wcześniej nie mogłeś dostrzec - dziwne symbole na ścianach, ślady krwi prowadzące w głąb budynku, oraz drzwi do piwnicy zabezpieczone ciężką kłódką. Schody na piętro już nie wydają się tak niebezpieczne."
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 2096,
+        "y": -352
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "main-1",
+      "target": "decision-2"
+    },
+    {
+      "id": "e2",
+      "source": "main-1",
+      "target": "decision-3",
+      "selected": false
+    },
+    {
+      "id": "e3",
+      "source": "main-1",
+      "target": "decision-24",
+      "selected": false
+    },
+    {
+      "id": "e4",
+      "source": "decision-2",
+      "target": "main-4"
+    },
+    {
+      "id": "e5",
+      "source": "decision-3",
+      "target": "main-5",
+      "selected": false
+    },
+    {
+      "id": "e6",
+      "source": "main-5",
+      "target": "decision-6",
+      "selected": false
+    },
+    {
+      "id": "e7",
+      "source": "main-5",
+      "target": "decision-7",
+      "selected": false
+    },
+    {
+      "id": "e8",
+      "source": "decision-6",
+      "target": "main-8",
+      "selected": false
+    },
+    {
+      "id": "e9",
+      "source": "decision-7",
+      "target": "main-8",
+      "selected": false
+    },
+    {
+      "id": "e10",
+      "source": "main-4",
+      "target": "decision-9",
+      "selected": false
+    },
+    {
+      "id": "e11",
+      "source": "main-4",
+      "target": "decision-10",
+      "selected": false
+    },
+    {
+      "id": "e12",
+      "source": "decision-9",
+      "target": "main-11",
+      "selected": false
+    },
+    {
+      "id": "e13",
+      "source": "decision-10",
+      "target": "main-11",
+      "selected": false
+    },
+    {
+      "id": "e14",
+      "source": "main-8",
+      "target": "decision-28"
+    },
+    {
+      "id": "e15",
+      "source": "decision-28",
+      "target": "main-12",
+      "selected": false
+    },
+    {
+      "id": "e16",
+      "source": "main-11",
+      "target": "decision-29"
+    },
+    {
+      "id": "e17",
+      "source": "decision-29",
+      "target": "main-23",
+      "selected": false
+    },
+    {
+      "id": "e18",
+      "source": "main-12",
+      "target": "decision-13",
+      "selected": false
+    },
+    {
+      "id": "e19",
+      "source": "main-12",
+      "target": "decision-14",
+      "selected": false
+    },
+    {
+      "id": "e20",
+      "source": "decision-13",
+      "target": "main-15",
+      "selected": false
+    },
+    {
+      "id": "e21",
+      "source": "decision-14",
+      "target": "main-16",
+      "selected": false
+    },
+    {
+      "id": "e22",
+      "source": "main-16",
+      "target": "decision-17",
+      "selected": false
+    },
+    {
+      "id": "e23",
+      "source": "main-16",
+      "target": "decision-18",
+      "selected": false
+    },
+    {
+      "id": "e24",
+      "source": "decision-17",
+      "target": "main-19",
+      "selected": false
+    },
+    {
+      "id": "e25",
+      "source": "decision-18",
+      "target": "main-20",
+      "selected": false
+    },
+    {
+      "id": "e26",
+      "source": "main-15",
+      "target": "decision-30",
+      "selected": false
+    },
+    {
+      "id": "e27",
+      "source": "decision-30",
+      "target": "main-21",
+      "selected": false
+    },
+    {
+      "id": "e28",
+      "source": "main-11",
+      "target": "decision-22",
+      "selected": false
+    },
+    {
+      "id": "e29",
+      "source": "decision-22",
+      "target": "main-23",
+      "selected": false
+    },
+    {
+      "id": "e30",
+      "source": "main-23",
+      "target": "decision-31",
+      "selected": false
+    },
+    {
+      "id": "e31",
+      "source": "decision-31",
+      "target": "main-19",
+      "selected": false
+    },
+    {
+      "id": "e32",
+      "source": "decision-24",
+      "target": "main-25",
+      "selected": false
+    },
+    {
+      "id": "e33",
+      "source": "main-25",
+      "target": "decision-26",
+      "selected": false
+    },
+    {
+      "id": "e34",
+      "source": "main-25",
+      "target": "decision-27",
+      "selected": false
+    },
+    {
+      "id": "e35",
+      "source": "decision-26",
+      "target": "main-8",
+      "selected": false
+    },
+    {
+      "id": "e36",
+      "source": "decision-27",
+      "target": "main-12",
+      "selected": false
+    },
+    {
+      "id": "e37",
+      "source": "main-4",
+      "target": "decision-32",
+      "selected": false
+    },
+    {
+      "id": "e38",
+      "source": "decision-32",
+      "target": "main-33",
+      "selected": false
+    },
+    {
+      "id": "e39",
+      "source": "main-33",
+      "target": "decision-34",
+      "selected": false
+    },
+    {
+      "id": "e40",
+      "source": "decision-34",
+      "target": "main-35",
+      "selected": false
+    },
+    {
+      "id": "e41",
+      "source": "main-35",
+      "target": "decision-10",
+      "selected": false
+    }
+  ],
+  "version": "1.0.0",
+  "createdAt": "2025-08-19T19:57:30.410Z",
+  "updatedAt": "2025-08-19T19:57:30.410Z"
+}

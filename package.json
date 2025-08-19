@@ -19,13 +19,16 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^6.10.0",
+    "react-wavesurfer.js": "^0.0.8",
     "reactflow": "^11.11.4",
     "uuid": "^11.1.0",
+    "wavesurfer.js": "^6.6.4",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/wavesurfer.js": "^6.0.12",
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.23",

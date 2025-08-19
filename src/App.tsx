@@ -1,5 +1,5 @@
-// ------ src/App.tsx ------
-import React, { useRef } from "react";
+// src/App.tsx
+import React, { useRef, useState } from "react";
 import { ReactFlowProvider } from "reactflow";
 import { FlowCanvas } from "@/components/flow/FlowCanvas";
 import { SidebarPanel } from "@/components/panels/SidebarPanel";
@@ -7,15 +7,32 @@ import { Button, Input, Label } from "@/components/ui";
 import { useFlowStore } from "@/flowStore";
 import { useGameStore } from "@/gameStore";
 import { ProjectData } from "@/types";
+import VideoTimeline from "./components/videoTimeline/VideoTimeline";
 
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [showTimeline, setShowTimeline] = useState(false);
+  
   const projectTitle = useFlowStore((s) => s.projectTitle);
   const setProjectTitle = useFlowStore((s) => s.setProjectTitle);
   const exportProject = useFlowStore((s) => s.exportProject);
   const importProject = useFlowStore((s) => s.importProject);
   const resetProject = useFlowStore((s) => s.resetProject);
   const mode = useGameStore((s) => s.mode);
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('video/')) {
+      setVideoFile(file);
+      setShowTimeline(true);
+    }
+  };
+
+  const handleSegmentsChange = (segments: any[]) => {
+    console.log('Segmenty wideo:', segments);
+  };
 
   const handleExport = () => {
     const projectData = exportProject();
@@ -48,7 +65,6 @@ export default function App() {
     };
     reader.readAsText(file);
     
-    // Reset input value to allow importing the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -57,14 +73,16 @@ export default function App() {
   const handleNewProject = () => {
     if (confirm("Czy na pewno chcesz utworzyć nowy projekt? Wszystkie niezapisane zmiany zostaną utracone.")) {
       resetProject();
+      setVideoFile(null);
+      setShowTimeline(false);
     }
   };
 
   return (
     <ReactFlowProvider>
-      <div className="flex h-screen bg-zinc-50">
+      <div className="flex flex-col h-screen bg-zinc-50">
         {/* Header */}
-        <div className="absolute top-0 left-0 right-0 bg-white border-b z-10 px-4 py-2">
+        <div className="bg-white border-b z-10 px-4 py-2 flex-shrink-0">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-4">
               <Label htmlFor="projectTitle" className="text-sm">Tytuł projektu:</Label>
@@ -77,6 +95,33 @@ export default function App() {
               />
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => videoInputRef.current?.click()}
+              >
+                {videoFile ? 'Zmień wideo' : 'Wybierz wideo'}
+              </Button>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                onChange={handleVideoSelect}
+                className="hidden"
+              />
+              
+              {showTimeline && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => setShowTimeline(!showTimeline)}
+                >
+                  {showTimeline ? 'Ukryj timeline' : 'Pokaż timeline'}
+                </Button>
+              )}
+              
+              <div className="w-px h-6 bg-zinc-200 mx-1" />
+              
               <Button size="sm" variant="outline" onClick={handleNewProject}>
                 Nowy projekt
               </Button>
@@ -97,15 +142,28 @@ export default function App() {
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 flex pt-14">
-          {/* Flow canvas */}
-          <div className="flex-1">
-            <FlowCanvas />
+        {/* Main content area */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Canvas and Timeline container */}
+          <div className="flex-1 flex flex-col">
+            {/* Flow Canvas */}
+            <div className={showTimeline && videoFile ? "flex-1" : "h-full"}>
+              <FlowCanvas />
+            </div>
+
+            {/* Video Timeline */}
+            {showTimeline && videoFile && (
+              <div className="h-80 border-t bg-white overflow-hidden flex-shrink-0">
+                <VideoTimeline
+                  videoFile={videoFile}
+                  onSegmentsChange={handleSegmentsChange}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Sidebar panel */}
-          <div className="w-96 border-l bg-white">
+          {/* Sidebar */}
+          <div className="w-96 border-l bg-white flex-shrink-0">
             <SidebarPanel />
           </div>
         </div>
