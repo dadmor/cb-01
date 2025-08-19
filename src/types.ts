@@ -34,6 +34,7 @@ export interface Condition {
 // Node data types
 export interface MainNodeData {
   label: string;
+  description?: string;
   durationSec: number;
   condition?: Condition;
   defaultDecisionId?: string;

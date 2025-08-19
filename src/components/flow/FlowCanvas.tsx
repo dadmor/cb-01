@@ -9,6 +9,7 @@ import ReactFlow, {
   OnConnect,
   OnSelectionChangeFunc,
   NodeTypes,
+  NodeDragHandler,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { DecisionNode, MainNode } from "./nodes";
@@ -20,6 +21,14 @@ import { FlowNode, MainNodeData, DecisionNodeData } from "@/types";
 const nodeTypes: NodeTypes = {
   main: MainNode,
   decision: DecisionNode,
+};
+
+// Rozmiar siatki do przyciągania
+const GRID_SIZE = 16;
+
+// Funkcja pomocnicza do przyciągania do siatki
+const snapToGrid = (value: number): number => {
+  return Math.round(value / GRID_SIZE) * GRID_SIZE;
 };
 
 export const FlowCanvas: React.FC = () => {
@@ -112,6 +121,31 @@ export const FlowCanvas: React.FC = () => {
     if (mode === "edit") setSelectedNode(null);
   }, [mode, setSelectedNode]);
 
+  // Handler dla przeciągania węzłów - przyciąganie do siatki
+  const onNodeDrag: NodeDragHandler = useCallback((event, node) => {
+    // Podczas przeciągania możemy opcjonalnie pokazać podgląd pozycji
+    // ale faktyczne przyciąganie nastąpi przy onNodeDragStop
+  }, []);
+
+  // Handler dla zakończenia przeciągania - przyciągnij do siatki
+  const onNodeDragStop: NodeDragHandler = useCallback((event, node) => {
+    const snappedPosition = {
+      x: snapToGrid(node.position.x),
+      y: snapToGrid(node.position.y),
+    };
+
+    // Aktualizuj pozycję węzła jeśli się zmieniła
+    if (snappedPosition.x !== node.position.x || snappedPosition.y !== node.position.y) {
+      applyNodesChange([
+        {
+          type: 'position',
+          id: node.id,
+          position: snappedPosition,
+        },
+      ]);
+    }
+  }, [applyNodesChange]);
+
   return (
     <ReactFlow
       nodes={nodesWithState}
@@ -122,6 +156,8 @@ export const FlowCanvas: React.FC = () => {
       onConnect={onConnect}
       onSelectionChange={onSelectionChange}
       onPaneClick={onPaneClick}
+      onNodeDrag={onNodeDrag}
+      onNodeDragStop={onNodeDragStop}
       connectionLineType={ConnectionLineType.SmoothStep}
       connectionLineStyle={{ stroke: "#10b981" }}
       defaultEdgeOptions={{ 
@@ -129,10 +165,13 @@ export const FlowCanvas: React.FC = () => {
         markerEnd: { type: MarkerType.ArrowClosed } 
       }}
       fitView
+      // Włącz przyciąganie do siatki
+      snapToGrid
+      snapGrid={[GRID_SIZE, GRID_SIZE]}
     >
       <Controls />
       <MiniMap style={{ height: 120 }} zoomable pannable />
-      <Background gap={16} size={1} />
+      <Background gap={GRID_SIZE} size={1} />
     </ReactFlow>
   );
 };
