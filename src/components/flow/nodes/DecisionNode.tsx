@@ -2,21 +2,20 @@ import { useGameStore } from "@/gameStore";
 import React from "react";
 import { Handle, Position } from "reactflow";
 
-
 interface DecisionNodeProps {
   data: {
     label: string;
     isAvailable?: boolean;
-    onClick?: () => void;
+    onClick?: () => void; // akcja w trybie gry (nie dotyka selekcji)
   };
-  selected: boolean;
+  selected: boolean; // dostarczane przez React Flow (internal)
 }
 
 export const DecisionNode: React.FC<DecisionNodeProps> = ({ data, selected }) => {
   const mode = useGameStore((s) => s.mode);
   const isGameOver = useGameStore((s) => s.isGameOver);
   const canClick = mode === "play" && !isGameOver && data.isAvailable;
-  
+
   return (
     <div
       className={`px-3 py-2 shadow-md rounded-full transition-all ${
@@ -27,7 +26,8 @@ export const DecisionNode: React.FC<DecisionNodeProps> = ({ data, selected }) =>
           : "bg-zinc-100 text-zinc-400 border border-dashed border-zinc-300"
       } ${selected ? "ring-2 ring-zinc-900" : ""}`}
       style={{ minWidth: 120 }}
-      onClick={data.onClick}
+      // klik działa tylko w trybie gry; nie używamy tego do selekcji
+      onClick={canClick ? data.onClick : undefined}
     >
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
       <div className="text-xs font-medium text-center">{data.label}</div>

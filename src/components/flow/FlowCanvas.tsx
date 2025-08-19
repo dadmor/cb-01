@@ -35,7 +35,7 @@ interface FlowCanvasProps {
 }
 
 export const FlowCanvas: React.FC<FlowCanvasProps> = ({
-  selectedNodeId,
+  selectedNodeId, // tylko do panelu; NIE wstrzykujemy selected do węzłów!
   onNodeSelect,
   nodes,
   edges,
@@ -55,7 +55,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const traverseDecision = useTraverseDecision(nodes, edges);
   const { remainingMs } = useNodeRuntime(currentNode, nodes, edges);
 
-  // wzbogacamy węzły o runtime + synchronizujemy selected
+  // Wzbogacamy dane węzłów o runtime, ale NIE ustawiamy pola `selected`.
   const nodesWithState = useMemo(() => {
     return nodes.map((node) => {
       const isUnlocked = isNodeUnlocked(node);
@@ -73,10 +73,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 
         return {
           ...node,
-          selected: node.id === selectedNodeId,
           data: {
             ...node.data,
             isAvailable: sourceIsCurrent && targetUnlocked,
+            // klik decyzji tylko w trybie gry; nie rusza selekcji RF
             onClick: () => traverseDecision(node.id),
           },
         };
@@ -84,7 +84,6 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 
       return {
         ...node,
-        selected: node.id === selectedNodeId,
         data: {
           ...node.data,
           isUnlocked,
@@ -101,7 +100,6 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     isNodeUnlocked,
     traverseDecision,
     remainingMs,
-    selectedNodeId,
   ]);
 
   const onConnect = useCallback(
@@ -145,27 +143,27 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 
       setNodes((nds) => [...nds, decisionNode]);
       setEdges((eds) => [...eds, edge1, edge2]);
+      // tylko informacyjnie do panelu – nie wpływa na wewnętrzną selekcję RF
       onNodeSelect(decisionId);
     },
     [nodes, edges, setNodes, setEdges, onNodeSelect]
   );
 
-  // klik myszą ma od razu ustawić selekcję (mouseDown -> click)
-  const onNodeClick = useCallback(
-    (_: any, node: any) => {
-      if (mode === "edit") onNodeSelect(node.id);
+  // Jedyny mechanizm synchronizacji z RF: reagujemy na zmianę selekcji w RF
+  const onSelectionChange = useCallback(
+    ({ nodes: selected }) => {
+      // w trybie edycji podpinamy panel do zaznaczonego przez RF
+      if (mode === "edit") {
+        onNodeSelect(selected?.[0]?.id ?? null);
+      }
     },
     [mode, onNodeSelect]
   );
 
-  // wspiera zaznaczanie prostokątem itp.
-  const onSelectionChange = useCallback(
-    ({ nodes: selected }) => {
-      if (mode !== "edit") return;
-      onNodeSelect(selected?.[0]?.id ?? null);
-    },
-    [mode, onNodeSelect]
-  );
+  // Opcjonalnie: klik w tło czyści selekcję w panelu (RF i tak sobie poradzi)
+  const onPaneClick = useCallback(() => {
+    if (mode === "edit") onNodeSelect(null);
+  }, [mode, onNodeSelect]);
 
   return (
     <ReactFlow
@@ -175,8 +173,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
-      onNodeClick={onNodeClick}
       onSelectionChange={onSelectionChange}
+      onPaneClick={onPaneClick}
       connectionLineType={ConnectionLineType.SmoothStep}
       connectionLineStyle={{ stroke: "#10b981" }}
       defaultEdgeOptions={{ type: "smoothstep", markerEnd: { type: MarkerType.ArrowClosed } }}

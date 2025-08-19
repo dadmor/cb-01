@@ -9,13 +9,13 @@ interface MainNodeProps {
     durationSec?: number;
     remainingMs?: number;
   };
-  selected: boolean;
+  selected: boolean; // dostarczane przez React Flow na podstawie WEWNĘTRZNEJ selekcji
 }
 
 export const MainNode: React.FC<MainNodeProps> = ({ data, selected }) => {
   const isUnlocked = data.isUnlocked ?? true;
   const isCurrent = data.isCurrent ?? false;
-  
+
   return (
     <div
       className={`px-4 py-3 shadow-md rounded-md bg-white border-2 transition-all ${
