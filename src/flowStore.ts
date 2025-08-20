@@ -1,31 +1,34 @@
 // ------ src/flowStore.ts ------
 import { create } from "zustand";
-import { 
-  applyNodeChanges as applyNodeChangesBase, 
-  applyEdgeChanges as applyEdgeChangesBase, 
-  NodeChange, 
+import {
+  applyNodeChanges as applyNodeChangesBase,
+  applyEdgeChanges as applyEdgeChangesBase,
+  NodeChange,
   EdgeChange,
-  Node,
-  Edge
 } from "reactflow";
-import { 
-  FlowNode, 
-  FlowEdge, 
-  MainNode, 
-  DecisionNode, 
-  MainNodeData, 
+import {
+  FlowNode,
+  FlowEdge,
+  MainNode,
+  DecisionNode,
+  MainNodeData,
   DecisionNodeData,
   ProjectData,
-  Variable
 } from "./types";
 import { useGameStore } from "./gameStore";
 
 // Type-safe wrappers for reactflow functions
-const applyNodeChanges = (changes: NodeChange[], nodes: FlowNode[]): FlowNode[] => {
+const applyNodeChanges = (
+  changes: NodeChange[],
+  nodes: FlowNode[]
+): FlowNode[] => {
   return applyNodeChangesBase(changes, nodes as any) as FlowNode[];
 };
 
-const applyEdgeChanges = (changes: EdgeChange[], edges: FlowEdge[]): FlowEdge[] => {
+const applyEdgeChanges = (
+  changes: EdgeChange[],
+  edges: FlowEdge[]
+): FlowEdge[] => {
   return applyEdgeChangesBase(changes, edges as any) as FlowEdge[];
 };
 
@@ -33,7 +36,7 @@ interface FlowStore {
   // Project metadata
   projectTitle: string;
   projectDescription: string;
-  
+
   // Flow state
   nodes: FlowNode[];
   edges: FlowEdge[];
@@ -49,8 +52,11 @@ interface FlowStore {
   addMainNode: () => void;
   deleteNode: (nodeId: string) => void;
   updateNode: (nodeId: string, data: MainNodeData | DecisionNodeData) => void;
-  insertDecisionBetweenMainNodes: (sourceId: string, targetId: string) => string | null;
-  
+  insertDecisionBetweenMainNodes: (
+    sourceId: string,
+    targetId: string
+  ) => string | null;
+
   // Import/Export
   exportProject: () => ProjectData;
   importProject: (data: ProjectData) => void;
@@ -96,7 +102,8 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
 
   // Project metadata actions
   setProjectTitle: (title) => set({ projectTitle: title }),
-  setProjectDescription: (description) => set({ projectDescription: description }),
+  setProjectDescription: (description) =>
+    set({ projectDescription: description }),
 
   // Node/Edge actions
   applyNodesChange: (changes) => {
@@ -136,11 +143,14 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
 
   deleteNode: (nodeId) => {
     if (nodeId === START_NODE_ID) return;
-    
+
     set((state) => ({
       nodes: state.nodes.filter((n) => n.id !== nodeId),
-      edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
-      selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId,
+      edges: state.edges.filter(
+        (e) => e.source !== nodeId && e.target !== nodeId
+      ),
+      selectedNodeId:
+        state.selectedNodeId === nodeId ? null : state.selectedNodeId,
     }));
   },
 
@@ -155,21 +165,26 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
 
   insertDecisionBetweenMainNodes: (sourceId, targetId) => {
     const state = get();
-    
+
     // Check if both nodes are main nodes
     const sourceNode = state.nodes.find((n) => n.id === sourceId);
     const targetNode = state.nodes.find((n) => n.id === targetId);
-    
-    if (!sourceNode || !targetNode || !isMainNode(sourceNode) || !isMainNode(targetNode)) {
+
+    if (
+      !sourceNode ||
+      !targetNode ||
+      !isMainNode(sourceNode) ||
+      !isMainNode(targetNode)
+    ) {
       return null;
     }
-    
+
     // Check if edge already exists
     const existingEdge = state.edges.find(
       (e) => e.source === sourceId && e.target === targetId
     );
     if (existingEdge) return null;
-    
+
     // Create decision node
     const decisionId = `decision-${state.nextNodeId}`;
     const decisionNode: DecisionNode = {
@@ -184,26 +199,26 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
         deltas: {},
       },
     };
-    
+
     // Create edges
     const edge1: FlowEdge = {
       id: `${sourceId}-${decisionId}`,
       source: sourceId,
       target: decisionId,
     };
-    
+
     const edge2: FlowEdge = {
       id: `${decisionId}-${targetId}`,
       source: decisionId,
       target: targetId,
     };
-    
+
     set({
       nodes: [...state.nodes, decisionNode],
       edges: [...state.edges, edge1, edge2],
       nextNodeId: state.nextNodeId + 1,
     });
-    
+
     return decisionId;
   },
 
@@ -211,7 +226,7 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
   exportProject: () => {
     const state = get();
     const gameState = useGameStore.getState();
-    
+
     const projectData: ProjectData = {
       title: state.projectTitle,
       description: state.projectDescription,
@@ -222,7 +237,7 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    
+
     return projectData;
   },
 
@@ -232,7 +247,7 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
     if (data.version && !data.version.startsWith("1.")) {
       throw new Error(`Niekompatybilna wersja projektu: ${data.version}`);
     }
-    
+
     // Update flow store
     set({
       projectTitle: data.title || "Zaimportowany Projekt",
@@ -243,17 +258,17 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
       // Calculate next node ID
       nextNodeId: Math.max(
         2,
-        ...data.nodes.map(n => {
+        ...data.nodes.map((n) => {
           const match = n.id.match(/\d+$/);
           return match ? parseInt(match[0]) + 1 : 2;
         })
       ),
     });
-    
+
     // Update game store variables
     const gameStore = useGameStore.getState();
     gameStore.setVariables(() => data.variables || []);
-    
+
     // Reset game state
     gameStore.stopPlay();
   },
@@ -268,13 +283,10 @@ export const useFlowStore = create<FlowStore>((set, get) => ({
       selectedNodeId: null,
       nextNodeId: 2,
     });
-    
+
     // Reset game store
     const gameStore = useGameStore.getState();
     gameStore.stopPlay();
-    gameStore.setVariables(() => [
-      { name: "zdrowie", value: 10, initialValue: 10, min: 0, max: 20 },
-      { name: "energia", value: 5, initialValue: 5, min: 0, max: 10 },
-    ]);
+    gameStore.setVariables(() => []);
   },
 }));

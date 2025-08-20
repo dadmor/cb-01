@@ -23,7 +23,6 @@ export const SidebarPanel: React.FC = () => {
   const nodes = useFlowStore((s) => s.nodes);
   const edges = useFlowStore((s) => s.edges);
   const selectedNodeId = useFlowStore((s) => s.selectedNodeId);
-  const setSelectedNode = useFlowStore((s) => s.setSelectedNode);
   const addMainNode = useFlowStore((s) => s.addMainNode);
   const deleteNode = useFlowStore((s) => s.deleteNode);
   const updateNode = useFlowStore((s) => s.updateNode);
@@ -131,7 +130,7 @@ export const SidebarPanel: React.FC = () => {
                 className={`
                   relative w-12 h-12 flex items-center justify-center rounded-l-lg transition-all
                   ${isActive 
-                    ? "bg-white shadow-md translate-x-1" 
+                    ? "bg-white shadow-md translate-x-1px" 
                     : "bg-zinc-100 hover:bg-zinc-200"
                   }
                   ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
@@ -154,7 +153,7 @@ export const SidebarPanel: React.FC = () => {
               
               {/* Active indicator */}
               {isActive && (
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-zinc-900 rounded-l" />
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-zinc-400 rounded-l" />
               )}
             </div>
           );
