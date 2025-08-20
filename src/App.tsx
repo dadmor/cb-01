@@ -1,69 +1,56 @@
-// src/App.tsx
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { ReactFlowProvider } from "reactflow";
-import { FlowCanvas } from "@/components/flow/FlowCanvas";
-import { SidebarPanel } from "@/components/panels/SidebarPanel";
-import { Button, Input, Label } from "@/components/ui";
-import { useFlowStore } from "@/flowStore";
-import { useGameStore } from "@/gameStore";
-import { useVideoStore, cleanupVideoStore } from "@/videoStore";
+import { FlowCanvas } from "@/modules/flow/FlowCanvas";
+import { VideoTimeline } from "@/modules/video/VideoTimeline";
+import { Sidebar } from "@/components/Sidebar";
+import { useFlowStore } from "@/modules/flow/store";
+import { useGameStore } from "@/modules/game/store";
+import { useVideoStore, cleanupVideo } from "@/modules/video/store";
 import { ProjectData } from "@/types";
-import VideoTimeline from "./components/videoTimeline/VideoTimeline";
 
 export default function App() {
+  const [projectTitle, setProjectTitle] = useState("New Project");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const mode = useGameStore(state => state.mode);
+  const variables = useGameStore(state => state.variables);
   
-  // Video store
-  const videoFile = useVideoStore((s) => s.videoFile);
-  const showTimeline = useVideoStore((s) => s.showTimeline);
-  const segments = useVideoStore((s) => s.segments);
-  const setVideoFile = useVideoStore((s) => s.setVideoFile);
-  const toggleTimeline = useVideoStore((s) => s.toggleTimeline);
-  const setSegments = useVideoStore((s) => s.setSegments);
-  const resetVideo = useVideoStore((s) => s.resetVideo);
+  const nodes = useFlowStore(state => state.nodes);
+  const edges = useFlowStore(state => state.edges);
+  const loadProject = useFlowStore(state => state.loadProject);
+  const clearProject = useFlowStore(state => state.clearProject);
   
-  // Flow store
-  const projectTitle = useFlowStore((s) => s.projectTitle);
-  const setProjectTitle = useFlowStore((s) => s.setProjectTitle);
-  const exportProject = useFlowStore((s) => s.exportProject);
-  const importProject = useFlowStore((s) => s.importProject);
-  const resetProject = useFlowStore((s) => s.resetProject);
-  
-  // Game store
-  const mode = useGameStore((s) => s.mode);
+  const videoFile = useVideoStore(state => state.videoFile);
+  const segments = useVideoStore(state => state.segments);
+  const showTimeline = useVideoStore(state => state.showTimeline);
+  const setVideo = useVideoStore(state => state.setVideo);
+  const toggleTimeline = useVideoStore(state => state.toggleTimeline);
+  const updateSegments = useVideoStore(state => state.updateSegments);
+  const clearVideo = useVideoStore(state => state.clearVideo);
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      cleanupVideoStore();
-    };
+    return () => cleanupVideo();
   }, []);
 
-  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('video/')) {
-      setVideoFile(file);
-    }
-  };
-
   const handleExport = () => {
-    const projectData = exportProject();
-    // Add video segments to export
-    const exportData = {
-      ...projectData,
-      videoSegments: segments
+    const projectData: ProjectData = {
+      title: projectTitle,
+      nodes,
+      edges,
+      variables,
+      videoSegments: segments,
+      version: "1.0.0"
     };
+
+    const dataStr = JSON.stringify(projectData, null, 2);
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
     
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `${projectTitle.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.json`;
-    
-    const linkElement = document.createElement("a");
-    linkElement.setAttribute("href", dataUri);
-    linkElement.setAttribute("download", exportFileDefaultName);
-    linkElement.click();
+    const link = document.createElement("a");
+    link.href = dataUri;
+    link.download = `${projectTitle.replace(/\s+/g, "_")}.json`;
+    link.click();
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,91 +60,97 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const content = e.target?.result as string;
-        const importData = JSON.parse(content);
+        const projectData = JSON.parse(e.target?.result as string) as ProjectData;
         
-        // Import project data
-        const { videoSegments, ...projectData } = importData;
-        importProject(projectData as ProjectData);
+        setProjectTitle(projectData.title);
+        loadProject(projectData.nodes, projectData.edges);
+        useGameStore.getState().updateVariables(() => projectData.variables);
+        updateSegments(projectData.videoSegments || []);
         
-        // Import video segments if present
-        if (videoSegments && Array.isArray(videoSegments)) {
-          setSegments(videoSegments);
-        }
-        
-        alert(`Projekt "${projectData.title}" został zaimportowany pomyślnie.`);
+        alert(`Project "${projectData.title}" loaded successfully!`);
       } catch (error) {
-        alert("Błąd podczas importowania projektu. Sprawdź czy plik jest w prawidłowym formacie.");
-        console.error("Import error:", error);
+        alert("Error loading project file");
+        console.error(error);
       }
     };
     reader.readAsText(file);
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   };
 
   const handleNewProject = () => {
-    if (confirm("Czy na pewno chcesz utworzyć nowy projekt? Wszystkie niezapisane zmiany zostaną utracone.")) {
-      resetProject();
-      resetVideo();
+    if (confirm("Create new project? Unsaved changes will be lost.")) {
+      setProjectTitle("New Project");
+      clearProject();
+      clearVideo();
+      useGameStore.getState().stopGame();
+      useGameStore.getState().updateVariables(() => []);
     }
   };
 
   return (
     <ReactFlowProvider>
-      <div className="flex flex-col h-screen bg-zinc-50 select-none">
+      <div className="h-screen flex flex-col bg-zinc-100">
         {/* Header */}
-        <div className="bg-white border-b z-10 px-4 py-2 flex-shrink-0">
+        <header className="bg-white border-b border-zinc-200 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Label htmlFor="projectTitle" className="text-xs uppercase">Tytuł projektu:</Label>
-              <Input
-                id="projectTitle"
+              <input
+                type="text"
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
                 disabled={mode === "play"}
-                className="w-64"
+                className="text-lg font-semibold bg-transparent border-b border-transparent hover:border-zinc-300 focus:border-blue-500 focus:outline-none px-1 disabled:cursor-not-allowed"
               />
             </div>
+            
             <div className="flex items-center gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <button
                 onClick={() => videoInputRef.current?.click()}
+                className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
               >
-                {videoFile ? 'Zmień wideo' : 'Wybierz wideo'}
-              </Button>
+                {videoFile ? "Change Video" : "Add Video"}
+              </button>
               <input
                 ref={videoInputRef}
                 type="file"
                 accept="video/*"
-                onChange={handleVideoSelect}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setVideo(file);
+                }}
                 className="hidden"
               />
               
               {videoFile && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
+                <button
                   onClick={toggleTimeline}
+                  className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
                 >
-                  {showTimeline ? 'Ukryj timeline' : 'Pokaż timeline'}
-                </Button>
+                  {showTimeline ? "Hide" : "Show"} Timeline
+                </button>
               )}
               
-              <div className="w-px h-6 bg-zinc-200 mx-1" />
+              <div className="w-px h-6 bg-zinc-300 mx-1" />
               
-              <Button size="sm" variant="outline" onClick={handleNewProject}>
-                Nowy projekt
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleExport}>
-                Eksportuj
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                Importuj
-              </Button>
+              <button
+                onClick={handleNewProject}
+                className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
+              >
+                New
+              </button>
+              
+              <button
+                onClick={handleExport}
+                className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
+              >
+                Export
+              </button>
+              
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
+              >
+                Import
+              </button>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -167,32 +160,30 @@ export default function App() {
               />
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Main content area */}
+        {/* Main content */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Canvas and Timeline container */}
           <div className="flex-1 flex flex-col">
-            {/* Flow Canvas */}
+            {/* Flow canvas */}
             <div className={showTimeline && videoFile ? "flex-1" : "h-full"}>
               <FlowCanvas />
             </div>
-
-            {/* Video Timeline */}
+            
+            {/* Video timeline */}
             {showTimeline && videoFile && (
-              <div className="h-64 border-t bg-white overflow-hidden flex-shrink-0">
+              <div className="h-64 border-t border-zinc-200">
                 <VideoTimeline
                   videoFile={videoFile}
-                  onSegmentsChange={setSegments}
+                  segments={segments}
+                  onSegmentsChange={updateSegments}
                 />
               </div>
             )}
           </div>
-
+          
           {/* Sidebar */}
-          <div className="w-96 flex-shrink-0 mt-px">
-            <SidebarPanel />
-          </div>
+          <Sidebar />
         </div>
       </div>
     </ReactFlowProvider>
