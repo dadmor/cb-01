@@ -7,6 +7,7 @@ import {
 } from "reactflow";
 import { StoryNode, StoryEdge, SceneNode, ChoiceNode } from "@/types";
 import { blockSnippets, autoLayout } from "./blockSnippets";
+import { snapPositionToGrid } from "./gridHelpers";
 
 // Type-safe wrappers for ReactFlow functions
 const applyNodeChanges = (changes: NodeChange[], nodes: StoryNode[]): StoryNode[] => {
@@ -49,7 +50,7 @@ let nextId = 2;
 const createSceneNode = (position = { x: 400, y: 250 }): SceneNode => ({
   id: `scene-${nextId++}`,
   type: "scene",
-  position,
+  position: snapPositionToGrid(position),
   data: {
     label: `Scene ${nextId - 1}`,
     durationSec: 5
@@ -62,7 +63,7 @@ const createChoiceNode = (
 ): ChoiceNode => ({
   id,
   type: "choice",
-  position,
+  position: snapPositionToGrid(position),
   data: {
     label: "Choice",
     effects: {}
@@ -74,7 +75,7 @@ export const useFlowStore = create<FlowStore>((set) => ({
     {
       id: START_NODE_ID,
       type: "scene",
-      position: { x: 250, y: 250 },
+      position: snapPositionToGrid({ x: 250, y: 250 }),
       data: { label: "Start", durationSec: 5 }
     }
   ],
@@ -82,10 +83,10 @@ export const useFlowStore = create<FlowStore>((set) => ({
   selectedNodeId: null,
 
   addSceneNode: () => set(state => {
-    const newNode = createSceneNode({
+    const newNode = createSceneNode(snapPositionToGrid({
       x: 400,
       y: 250 + state.nodes.length * 100
-    });
+    }));
     return {
       nodes: [...state.nodes, newNode],
       selectedNodeId: newNode.id
@@ -205,7 +206,7 @@ export const useFlowStore = create<FlowStore>((set) => ({
     nodes: [{
       id: START_NODE_ID,
       type: "scene",
-      position: { x: 250, y: 250 },
+      position: snapPositionToGrid({ x: 250, y: 250 }),
       data: { label: "Start", durationSec: 5 }
     }],
     edges: [],

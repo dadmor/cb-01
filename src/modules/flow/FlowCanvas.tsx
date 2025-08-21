@@ -271,11 +271,13 @@ export const FlowCanvas: React.FC = () => {
       onPaneClick={onPaneClick}
       connectionLineType={ConnectionLineType.SmoothStep}
       defaultEdgeOptions={{ type: "smoothstep" }}
+      snapToGrid={true}
+      snapGrid={[10, 10]}
       fitView
     >
       <Controls />
       <MiniMap />
-      <Background />
+      <Background  gap={10} size={1} />
     </ReactFlow>
   );
 };

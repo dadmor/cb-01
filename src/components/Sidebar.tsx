@@ -118,7 +118,7 @@ export const Sidebar: React.FC = () => {
                 className="w-full p-3 border-2 border-dashed border-zinc-300 rounded-lg text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 transition-colors"
               >
                 <span className="text-2xl block mb-1">+</span>
-                <span className="text-sm">Add First Scene</span>
+                <span className="text-sm">Add Single Scene</span>
               </button>
             )}
 
