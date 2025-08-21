@@ -6,6 +6,7 @@ import {
   EdgeChange 
 } from "reactflow";
 import { StoryNode, StoryEdge, SceneNode, ChoiceNode } from "@/types";
+import { blockSnippets, autoLayout } from "./blockSnippets";
 
 // Type-safe wrappers for ReactFlow functions
 const applyNodeChanges = (changes: NodeChange[], nodes: StoryNode[]): StoryNode[] => {
@@ -23,6 +24,7 @@ interface FlowStore {
   
   // Node operations
   addSceneNode: () => void;
+  addBlockSnippet: (snippetId: string, sourceNodeId: string) => void;
   updateNode: (nodeId: string, data: any) => void;
   deleteNode: (nodeId: string) => void;
   
@@ -87,6 +89,48 @@ export const useFlowStore = create<FlowStore>((set) => ({
     return {
       nodes: [...state.nodes, newNode],
       selectedNodeId: newNode.id
+    };
+  }),
+
+  addBlockSnippet: (snippetId, sourceNodeId) => set(state => {
+    const snippet = blockSnippets.find(s => s.id === snippetId);
+    if (!snippet) return state;
+    
+    const sourceNode = state.nodes.find(n => n.id === sourceNodeId);
+    if (!sourceNode) return state;
+    
+    const { nodes: newNodes, edges: newEdges } = snippet.create(
+      sourceNodeId, 
+      sourceNode.position
+    );
+    
+    // Connect source to first new node(s) if snippet doesn't handle it
+    const connectingEdges = newEdges.filter(e => e.source === sourceNodeId);
+    if (connectingEdges.length === 0 && newNodes.length > 0) {
+      // Find nodes without incoming edges
+      const nodesWithoutIncoming = newNodes.filter(n => 
+        !newEdges.some(e => e.target === n.id)
+      );
+      
+      // Connect to first node or all choice nodes at the start
+      nodesWithoutIncoming.forEach(node => {
+        if (node.type === 'choice' || nodesWithoutIncoming.length === 1) {
+          newEdges.push({
+            id: `${sourceNodeId}-${node.id}`,
+            source: sourceNodeId,
+            target: node.id
+          });
+        }
+      });
+    }
+    
+    // Apply auto-layout to new nodes
+    const layoutedNodes = autoLayout([...newNodes], newEdges);
+    
+    return {
+      nodes: [...state.nodes, ...layoutedNodes],
+      edges: [...state.edges, ...newEdges],
+      selectedNodeId: newNodes[0]?.id || state.selectedNodeId
     };
   }),
 

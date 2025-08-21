@@ -4,6 +4,7 @@ import { useFlowStore, isSceneNode, isChoiceNode, START_NODE_ID } from "@/module
 import { useVideoStore } from "@/modules/video/store";
 import { VariablesManager } from "@/modules/variables";
 import { VideoPreview } from "@/modules/video/VideoPreview";
+import { blockSnippets } from "@/modules/flow/blockSnippets";
 
 export const Sidebar: React.FC = () => {
   const mode = useGameStore(state => state.mode);
@@ -21,6 +22,7 @@ export const Sidebar: React.FC = () => {
   const edges = useFlowStore(state => state.edges);
   const selectedNodeId = useFlowStore(state => state.selectedNodeId);
   const addSceneNode = useFlowStore(state => state.addSceneNode);
+  const addBlockSnippet = useFlowStore(state => state.addBlockSnippet);
   const updateNode = useFlowStore(state => state.updateNode);
   const deleteNode = useFlowStore(state => state.deleteNode);
 
@@ -87,13 +89,38 @@ export const Sidebar: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {mode === "edit" ? (
           <>
-            {/* Add node button */}
-            <button
-              onClick={addSceneNode}
-              className="w-full p-2 border-2 border-dashed border-zinc-300 rounded text-zinc-600 hover:border-zinc-400 hover:text-zinc-700"
-            >
-              + Add Scene
-            </button>
+            {/* Block snippets - only show when a scene node is selected */}
+            {selectedNode && isSceneNode(selectedNode) && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-zinc-700">Add Blocks</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {blockSnippets.map(snippet => (
+                    <button
+                      key={snippet.id}
+                      onClick={() => addBlockSnippet(snippet.id, selectedNode.id)}
+                      className="p-3 border border-zinc-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{snippet.icon}</span>
+                        <span className="text-sm font-medium">{snippet.name}</span>
+                      </div>
+                      <p className="text-xs text-zinc-600">{snippet.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Simple add scene button when nothing is selected */}
+            {!selectedNode && (
+              <button
+                onClick={addSceneNode}
+                className="w-full p-3 border-2 border-dashed border-zinc-300 rounded-lg text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 transition-colors"
+              >
+                <span className="text-2xl block mb-1">+</span>
+                <span className="text-sm">Add First Scene</span>
+              </button>
+            )}
 
             {/* Node editor */}
             {selectedNode && (
