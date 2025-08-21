@@ -259,6 +259,24 @@ export const FlowCanvas: React.FC = () => {
     }
   }, [mode, selectNode]);
 
+  // Handle keyboard delete
+  const deleteKeyCode = useCallback((event: KeyboardEvent) => {
+    const deleteNode = useFlowStore.getState().deleteNode;
+    const selectedNodeId = useFlowStore.getState().selectedNodeId;
+    
+    if (mode === "edit" && selectedNodeId && (event.key === "Delete" || event.key === "Backspace")) {
+      event.preventDefault();
+      deleteNode(selectedNodeId);
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    document.addEventListener("keydown", deleteKeyCode);
+    return () => {
+      document.removeEventListener("keydown", deleteKeyCode);
+    };
+  }, [deleteKeyCode]);
+
   return (
     <ReactFlow
       nodes={enrichedNodes}
@@ -270,7 +288,15 @@ export const FlowCanvas: React.FC = () => {
       onSelectionChange={onSelectionChange}
       onPaneClick={onPaneClick}
       connectionLineType={ConnectionLineType.SmoothStep}
-      defaultEdgeOptions={{ type: "smoothstep" }}
+      defaultEdgeOptions={{ 
+        type: "smoothstep",
+        markerEnd: 'arrow',
+        style: {
+          strokeWidth: 2,
+          stroke: '#6b7280',
+        }
+      }}
+      deleteKeyCode={null} // Disable default delete behavior
       snapToGrid={true}
       snapGrid={[10, 10]}
       fitView

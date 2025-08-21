@@ -144,45 +144,99 @@ export const useFlowStore = create<FlowStore>((set) => ({
   deleteNode: (nodeId) => {
     if (nodeId === START_NODE_ID) return;
     
-    set(state => ({
-      nodes: state.nodes.filter(n => n.id !== nodeId),
-      edges: state.edges.filter(e => 
-        e.source !== nodeId && e.target !== nodeId
-      ),
-      selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId
-    }));
+    set(state => {
+      const nodeToDelete = state.nodes.find(n => n.id === nodeId);
+      if (!nodeToDelete) return state;
+      
+      // If deleting a choice node, remove all connected edges
+      if (nodeToDelete.type === 'choice') {
+        return {
+          nodes: state.nodes.filter(n => n.id !== nodeId),
+          edges: state.edges.filter(e => 
+            e.source !== nodeId && e.target !== nodeId
+          ),
+          selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId
+        };
+      }
+      
+      // If deleting a scene node, find all connected choice nodes
+      const nodesToDelete = [nodeId];
+      const edgesToDelete = new Set<string>();
+      
+      // Find all edges connected to the scene being deleted
+      state.edges.forEach(edge => {
+        if (edge.source === nodeId || edge.target === nodeId) {
+          edgesToDelete.add(edge.id);
+        }
+      });
+      
+      // Check each choice node in the graph
+      state.nodes.forEach(node => {
+        if (node.type === 'choice') {
+          // Count how many edges this choice node will have after deletion
+          const currentEdges = state.edges.filter(e => 
+            (e.source === node.id || e.target === node.id) &&
+            !edgesToDelete.has(e.id)
+          );
+          
+          // A choice node needs at least 2 connections to be valid
+          // (one incoming from a scene, one outgoing to a scene)
+          if (currentEdges.length < 2) {
+            nodesToDelete.push(node.id);
+            // Also mark edges from this choice node for deletion
+            state.edges.forEach(edge => {
+              if (edge.source === node.id || edge.target === node.id) {
+                edgesToDelete.add(edge.id);
+              }
+            });
+          }
+        }
+      });
+      
+      return {
+        nodes: state.nodes.filter(n => !nodesToDelete.includes(n.id)),
+        edges: state.edges.filter(e => !edgesToDelete.has(e.id)),
+        selectedNodeId: nodesToDelete.includes(state.selectedNodeId || '') ? null : state.selectedNodeId
+      };
+    });
   },
 
   createChoice: (sourceId, targetId) => set(state => {
-    // Check if connection already exists
-    const existingPath = state.edges.find(e => 
-      (e.source === sourceId && e.target === targetId) ||
-      (e.source === sourceId && state.edges.some(e2 => 
-        e2.source === e.target && e2.target === targetId
-      ))
-    );
-    
-    if (existingPath) return state;
-    
     const sourceNode = state.nodes.find(n => n.id === sourceId);
     const targetNode = state.nodes.find(n => n.id === targetId);
     
     if (!sourceNode || !targetNode) return state;
     
-    // Create choice node between scenes
-    const choiceId = `choice-${nextId++}`;
-    const choiceNode = createChoiceNode(choiceId, {
-      x: (sourceNode.position.x + targetNode.position.x) / 2,
-      y: (sourceNode.position.y + targetNode.position.y) / 2
-    });
+    // Check if connection already exists directly
+    const existingDirectConnection = state.edges.find(e => 
+      e.source === sourceId && e.target === targetId
+    );
     
+    if (existingDirectConnection) return state;
+    
+    // If connecting two scenes, create a choice node between them
+    if (sourceNode.type === 'scene' && targetNode.type === 'scene') {
+      const choiceId = `choice-${nextId++}`;
+      const choiceNode = createChoiceNode(choiceId, {
+        x: (sourceNode.position.x + targetNode.position.x) / 2,
+        y: (sourceNode.position.y + targetNode.position.y) / 2
+      });
+      
+      return {
+        nodes: [...state.nodes, choiceNode],
+        edges: [
+          ...state.edges,
+          { id: `${sourceId}-${choiceId}`, source: sourceId, target: choiceId },
+          { id: `${choiceId}-${targetId}`, source: choiceId, target: targetId }
+        ]
+      };
+    }
+    
+    // For any other connection (scene->choice, choice->scene, choice->choice), create direct edge
+    const edgeId = `${sourceId}-${targetId}`;
     return {
-      nodes: [...state.nodes, choiceNode],
-      edges: [
-        ...state.edges,
-        { id: `${sourceId}-${choiceId}`, source: sourceId, target: choiceId },
-        { id: `${choiceId}-${targetId}`, source: choiceId, target: targetId }
-      ]
+      ...state,
+      edges: [...state.edges, { id: edgeId, source: sourceId, target: targetId }]
     };
   }),
 

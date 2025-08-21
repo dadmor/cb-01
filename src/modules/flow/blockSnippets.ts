@@ -26,18 +26,30 @@ export const blockSnippets: BlockSnippet[] = [
     icon: "📄",
     create: (sourceNodeId, position) => {
       const sceneId = generateId("scene");
+      const choiceId = generateId("choice");
       
       return {
-        nodes: [{
-          id: sceneId,
-          type: "scene",
-          position: snapPositionToGrid({ x: position.x + 300, y: position.y }),
-          data: { 
-            label: "New Scene", 
-            durationSec: 5 
+        nodes: [
+          {
+            id: choiceId,
+            type: "choice",
+            position: snapPositionToGrid({ x: position.x + 200, y: position.y }),
+            data: { label: "Continue", effects: {} }
+          },
+          {
+            id: sceneId,
+            type: "scene",
+            position: snapPositionToGrid({ x: position.x + 400, y: position.y }),
+            data: { 
+              label: "New Scene", 
+              durationSec: 5 
+            }
           }
-        }],
-        edges: []
+        ],
+        edges: [
+          { id: `${sourceNodeId}-${choiceId}`, source: sourceNodeId, target: choiceId },
+          { id: `${choiceId}-${sceneId}`, source: choiceId, target: sceneId }
+        ]
       };
     }
   },
@@ -49,33 +61,42 @@ export const blockSnippets: BlockSnippet[] = [
     icon: "📄→🔀",
     create: (sourceNodeId, position) => {
       const sceneId1 = generateId("scene");
-      const choiceId = generateId("choice");
+      const choiceId1 = generateId("choice");
+      const choiceId2 = generateId("choice");
       const sceneId2 = generateId("scene");
       
       return {
         nodes: [
           {
+            id: choiceId1,
+            type: "choice",
+            position: snapPositionToGrid({ x: position.x + 200, y: position.y }),
+            data: { label: "To Scene A", effects: {} }
+          },
+          {
             id: sceneId1,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 300, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 400, y: position.y }),
             data: { label: "Scene A", durationSec: 5 }
           },
           {
-            id: choiceId,
+            id: choiceId2,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 500, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 600, y: position.y }),
             data: { label: "Continue", effects: {} }
           },
           {
             id: sceneId2,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 700, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 800, y: position.y }),
             data: { label: "Scene B", durationSec: 5 }
           }
         ],
         edges: [
-          { id: `${sceneId1}-${choiceId}`, source: sceneId1, target: choiceId },
-          { id: `${choiceId}-${sceneId2}`, source: choiceId, target: sceneId2 }
+          { id: `${sourceNodeId}-${choiceId1}`, source: sourceNodeId, target: choiceId1 },
+          { id: `${choiceId1}-${sceneId1}`, source: choiceId1, target: sceneId1 },
+          { id: `${sceneId1}-${choiceId2}`, source: sceneId1, target: choiceId2 },
+          { id: `${choiceId2}-${sceneId2}`, source: choiceId2, target: sceneId2 }
         ]
       };
     }
@@ -177,15 +198,22 @@ export const blockSnippets: BlockSnippet[] = [
       const sceneId1 = generateId("scene");
       const choiceId1 = generateId("choice");
       const choiceId2 = generateId("choice");
+      const choiceId3 = generateId("choice");
       const sceneId2 = generateId("scene");
       const sceneId3 = generateId("scene");
       
       return {
         nodes: [
           {
+            id: choiceId1,
+            type: "choice",
+            position: snapPositionToGrid({ x: position.x + 200, y: position.y }),
+            data: { label: "To Check Point", effects: {} }
+          },
+          {
             id: sceneId1,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 300, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 400, y: position.y }),
             data: { 
               label: "Check Point", 
               durationSec: 3,
@@ -193,18 +221,18 @@ export const blockSnippets: BlockSnippet[] = [
             }
           },
           {
-            id: choiceId1,
+            id: choiceId2,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 500, y: position.y - 50 }),
+            position: snapPositionToGrid({ x: position.x + 600, y: position.y - 50 }),
             data: { 
               label: "High Path", 
               effects: { energy: -2 }
             }
           },
           {
-            id: choiceId2,
+            id: choiceId3,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 500, y: position.y + 50 }),
+            position: snapPositionToGrid({ x: position.x + 600, y: position.y + 50 }),
             data: { 
               label: "Low Path", 
               effects: { health: -1 }
@@ -213,7 +241,7 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: sceneId2,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 700, y: position.y - 50 }),
+            position: snapPositionToGrid({ x: position.x + 800, y: position.y - 50 }),
             data: { 
               label: "Success Route", 
               durationSec: 5,
@@ -223,7 +251,7 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: sceneId3,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 700, y: position.y + 50 }),
+            position: snapPositionToGrid({ x: position.x + 800, y: position.y + 50 }),
             data: { 
               label: "Safe Route", 
               durationSec: 5 
@@ -231,10 +259,12 @@ export const blockSnippets: BlockSnippet[] = [
           }
         ],
         edges: [
-          { id: `${sceneId1}-${choiceId1}`, source: sceneId1, target: choiceId1 },
+          { id: `${sourceNodeId}-${choiceId1}`, source: sourceNodeId, target: choiceId1 },
+          { id: `${choiceId1}-${sceneId1}`, source: choiceId1, target: sceneId1 },
           { id: `${sceneId1}-${choiceId2}`, source: sceneId1, target: choiceId2 },
-          { id: `${choiceId1}-${sceneId2}`, source: choiceId1, target: sceneId2 },
-          { id: `${choiceId2}-${sceneId3}`, source: choiceId2, target: sceneId3 }
+          { id: `${sceneId1}-${choiceId3}`, source: sceneId1, target: choiceId3 },
+          { id: `${choiceId2}-${sceneId2}`, source: choiceId2, target: sceneId2 },
+          { id: `${choiceId3}-${sceneId3}`, source: choiceId3, target: sceneId3 }
         ]
       };
     }
