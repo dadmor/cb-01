@@ -3,13 +3,16 @@ import { ReactFlowProvider } from "reactflow";
 import { FlowCanvas } from "@/modules/flow/FlowCanvas";
 import { VideoTimeline } from "@/modules/video/VideoTimeline";
 import { Sidebar } from "@/components/Sidebar";
+
 import { useFlowStore } from "@/modules/flow/store";
 import { useGameStore } from "@/modules/game/store";
 import { useVideoStore, cleanupVideo } from "@/modules/video/store";
 import { ProjectData } from "@/types";
+import { VideoReloadModal } from "./modules/video/VideoReloadModal";
 
 export default function App() {
   const [projectTitle, setProjectTitle] = useState("New Project");
+  const [showVideoReloadModal, setShowVideoReloadModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -23,16 +26,48 @@ export default function App() {
   
   const videoFile = useVideoStore(state => state.videoFile);
   const segments = useVideoStore(state => state.segments);
+  const selectedSegmentId = useVideoStore(state => state.selectedSegmentId);
   const showTimeline = useVideoStore(state => state.showTimeline);
   const setVideo = useVideoStore(state => state.setVideo);
   const toggleTimeline = useVideoStore(state => state.toggleTimeline);
   const updateSegments = useVideoStore(state => state.updateSegments);
+  const selectSegment = useVideoStore(state => state.selectSegment);
   const clearVideo = useVideoStore(state => state.clearVideo);
+
+  // Initialize storage and check for video metadata on mount
+  useEffect(() => {
+    const initializeApp = async () => {
+      // Initialize OPFS storage
+      await useVideoStore.getState().initializeStorage();
+      
+      // Check if we need to reload video
+      const videoMetadata = useVideoStore.getState().videoMetadata;
+      const savedSegments = useVideoStore.getState().segments;
+      
+      if (videoMetadata && !useVideoStore.getState().videoFile) {
+        setShowVideoReloadModal(true);
+      }
+      
+      // Make sure segments are loaded
+      if (savedSegments && savedSegments.length > 0) {
+        console.log('Restored segments:', savedSegments);
+      }
+    };
+    
+    initializeApp();
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => cleanupVideo();
   }, []);
+
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVideo(file);
+    }
+  };
 
   const handleExport = () => {
     const projectData: ProjectData = {
@@ -113,10 +148,7 @@ export default function App() {
                 ref={videoInputRef}
                 type="file"
                 accept="video/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) setVideo(file);
-                }}
+                onChange={handleVideoSelect}
                 className="hidden"
               />
               
@@ -176,7 +208,9 @@ export default function App() {
                 <VideoTimeline
                   videoFile={videoFile}
                   segments={segments}
+                  selectedSegmentId={selectedSegmentId || undefined}
                   onSegmentsChange={updateSegments}
+                  onSegmentSelect={selectSegment}
                 />
               </div>
             )}
@@ -185,6 +219,15 @@ export default function App() {
           {/* Sidebar */}
           <Sidebar />
         </div>
+
+        {/* Video reload modal */}
+        <VideoReloadModal 
+          isOpen={showVideoReloadModal}
+          onClose={() => setShowVideoReloadModal(false)}
+          onVideoSelected={() => {
+            console.log('Video reloaded successfully');
+          }}
+        />
       </div>
     </ReactFlowProvider>
   );

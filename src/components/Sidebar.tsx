@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useGameStore } from "@/modules/game/store";
 import { useFlowStore, isSceneNode, isChoiceNode, START_NODE_ID } from "@/modules/flow/store";
 import { useVideoStore } from "@/modules/video/store";
@@ -28,8 +28,8 @@ export const Sidebar: React.FC = () => {
 
   const videoUrl = useVideoStore(state => state.videoUrl);
   const segments = useVideoStore(state => state.segments);
-  
-  const [selectedVideoSegmentId, setSelectedVideoSegmentId] = useState<string | null>(null);
+  const selectedSegmentId = useVideoStore(state => state.selectedSegmentId);
+  const selectSegment = useVideoStore(state => state.selectSegment);
 
   const selectedNode = useMemo(
     () => nodes.find(n => n.id === selectedNodeId),
@@ -392,13 +392,13 @@ export const Sidebar: React.FC = () => {
             <VideoPreview
               videoUrl={videoUrl}
               segments={segments}
-              selectedSegmentId={selectedVideoSegmentId || undefined}
-              onSegmentSelect={setSelectedVideoSegmentId}
+              selectedSegmentId={selectedSegmentId || undefined}
+              onSegmentSelect={selectSegment}
             />
-            {mode === "edit" && selectedNode && isSceneNode(selectedNode) && selectedVideoSegmentId && (
+            {mode === "edit" && selectedNode && isSceneNode(selectedNode) && selectedSegmentId && (
               <button
                 onClick={() => {
-                  const segment = segments.find(s => s.id === selectedVideoSegmentId);
+                  const segment = segments.find(s => s.id === selectedSegmentId);
                   if (segment) {
                     updateNode(selectedNode.id, {
                       ...selectedNode.data,

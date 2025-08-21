@@ -30,6 +30,9 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const playSegment = (segment: VideoSegment) => {
     if (!videoRef.current) return;
     
+    // Select the segment when playing
+    onSegmentSelect?.(segment.id);
+    
     videoRef.current.currentTime = segment.start;
     videoRef.current.play();
     setIsPlaying(true);
@@ -97,7 +100,6 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             key={segment.id}
             onClick={() => {
               onSegmentSelect?.(segment.id);
-              playSegment(segment);
             }}
             className={`
               p-2 rounded cursor-pointer transition-colors text-sm
