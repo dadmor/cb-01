@@ -18,6 +18,7 @@ import { useVideoStore } from "@/modules/video/store";
 import { VariablesManager } from "@/modules/variables";
 import { ChoiceNode as ChoiceNodeType } from "@/types";
 
+// Memoize nodeTypes to prevent React Flow warning
 const nodeTypes: NodeTypes = {
   scene: SceneNode,
   choice: ChoiceNode,
@@ -277,6 +278,16 @@ export const FlowCanvas: React.FC = () => {
     };
   }, [deleteKeyCode]);
 
+  // Memoize default edge options
+  const defaultEdgeOptions = useMemo(() => ({
+    type: "smoothstep",
+    markerEnd: 'arrow',
+    style: {
+      strokeWidth: 2,
+      stroke: '#6b7280',
+    }
+  }), []);
+
   return (
     <ReactFlow
       nodes={enrichedNodes}
@@ -288,14 +299,7 @@ export const FlowCanvas: React.FC = () => {
       onSelectionChange={onSelectionChange}
       onPaneClick={onPaneClick}
       connectionLineType={ConnectionLineType.SmoothStep}
-      defaultEdgeOptions={{ 
-        type: "smoothstep",
-        markerEnd: 'arrow',
-        style: {
-          strokeWidth: 2,
-          stroke: '#6b7280',
-        }
-      }}
+      defaultEdgeOptions={defaultEdgeOptions}
       deleteKeyCode={null} // Disable default delete behavior
       snapToGrid={true}
       snapGrid={[10, 10]}

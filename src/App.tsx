@@ -3,6 +3,7 @@ import { ReactFlowProvider } from "reactflow";
 import { FlowCanvas } from "@/modules/flow/FlowCanvas";
 import { VideoTimeline } from "@/modules/video/VideoTimeline";
 import { Sidebar } from "@/components/Sidebar";
+import { RegionsPanel } from "@/components/RegionsPanel";
 
 import { useFlowStore } from "@/modules/flow/store";
 import { useGameStore } from "@/modules/game/store";
@@ -27,9 +28,7 @@ export default function App() {
   const videoFile = useVideoStore(state => state.videoFile);
   const segments = useVideoStore(state => state.segments);
   const selectedSegmentId = useVideoStore(state => state.selectedSegmentId);
-  const showTimeline = useVideoStore(state => state.showTimeline);
   const setVideo = useVideoStore(state => state.setVideo);
-  const toggleTimeline = useVideoStore(state => state.toggleTimeline);
   const updateSegments = useVideoStore(state => state.updateSegments);
   const selectSegment = useVideoStore(state => state.selectSegment);
   const clearVideo = useVideoStore(state => state.clearVideo);
@@ -37,10 +36,8 @@ export default function App() {
   // Initialize storage and check for video metadata on mount
   useEffect(() => {
     const initializeApp = async () => {
-      // Initialize OPFS storage
       await useVideoStore.getState().initializeStorage();
       
-      // Check if we need to reload video
       const videoMetadata = useVideoStore.getState().videoMetadata;
       const savedSegments = useVideoStore.getState().segments;
       
@@ -48,7 +45,6 @@ export default function App() {
         setShowVideoReloadModal(true);
       }
       
-      // Make sure segments are loaded
       if (savedSegments && savedSegments.length > 0) {
         console.log('Restored segments:', savedSegments);
       }
@@ -65,7 +61,7 @@ export default function App() {
   const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setVideo(file);
+      await setVideo(file);
     }
   };
 
@@ -123,26 +119,84 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="h-screen flex flex-col bg-zinc-100">
+      <div className="h-screen flex flex-col bg-zinc-950">
         {/* Header */}
-        <header className="bg-white border-b border-zinc-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <header className="h-12 bg-zinc-900 border-b border-zinc-800 px-4 flex items-center flex-shrink-0">
+          <div className="flex items-center gap-6 flex-1">
+            {/* Logo/Brand */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">IS</span>
+              </div>
+              <span className="text-zinc-300 font-medium">Interactive Story</span>
+            </div>
+
+            {/* Project title */}
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-500">Project:</span>
               <input
                 type="text"
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
                 disabled={mode === "play"}
-                className="text-lg font-semibold bg-transparent border-b border-transparent hover:border-zinc-300 focus:border-blue-500 focus:outline-none px-1 disabled:cursor-not-allowed"
+                className="bg-transparent text-zinc-200 border-b border-transparent hover:border-zinc-600 focus:border-blue-500 focus:outline-none px-1 disabled:cursor-not-allowed"
               />
             </div>
             
+            <div className="flex-1" />
+            
+            {/* Main actions */}
             <div className="flex items-center gap-2">
+              {/* File menu */}
+              <div className="flex items-center">
+                <button
+                  onClick={handleNewProject}
+                  className="px-3 py-1.5 text-zinc-300 hover:text-white hover:bg-zinc-800 text-sm"
+                  title="New Project (Ctrl+N)"
+                >
+                  New
+                </button>
+                
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded text-sm"
+                  title="Open Project (Ctrl+O)"
+                >
+                  Open
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleImport}
+                  className="hidden"
+                />
+                
+                <button
+                  onClick={handleExport}
+                  className="px-3 py-1.5 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded text-sm"
+                  title="Save Project (Ctrl+S)"
+                >
+                  Save
+                </button>
+              </div>
+              
+              <div className="w-px h-6 bg-zinc-700 mx-2" />
+              
+              {/* Media controls */}
               <button
                 onClick={() => videoInputRef.current?.click()}
-                className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
+                                  className={`px-3 py-1.5 text-sm flex items-center gap-2 ${
+                  videoFile 
+                    ? "text-green-400 hover:text-green-300 hover:bg-zinc-800" 
+                    : "text-zinc-300 hover:text-white hover:bg-zinc-800"
+                }`}
+                title="Import Video"
               >
-                {videoFile ? "Change Video" : "Add Video"}
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
+                </svg>
+                {videoFile ? "Change Video" : "Import Video"}
               </button>
               <input
                 ref={videoInputRef}
@@ -151,73 +205,53 @@ export default function App() {
                 onChange={handleVideoSelect}
                 className="hidden"
               />
-              
-              {videoFile && (
-                <button
-                  onClick={toggleTimeline}
-                  className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
-                >
-                  {showTimeline ? "Hide" : "Show"} Timeline
-                </button>
-              )}
-              
-              <div className="w-px h-6 bg-zinc-300 mx-1" />
-              
-              <button
-                onClick={handleNewProject}
-                className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
-              >
-                New
-              </button>
-              
-              <button
-                onClick={handleExport}
-                className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
-              >
-                Export
-              </button>
-              
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-1 border border-zinc-300 rounded text-sm hover:bg-zinc-50"
-              >
-                Import
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-              />
             </div>
           </div>
         </header>
 
-        {/* Main content */}
-        <div className="flex-1 flex overflow-hidden">
-          <div className="flex-1 flex flex-col">
-            {/* Flow canvas */}
-            <div className={showTimeline && videoFile ? "flex-1" : "h-full"}>
+        {/* Main workspace layout */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Three columns layout */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left column - Regions Panel */}
+            <div className="w-80 border-r border-zinc-800 flex-shrink-0">
+              {videoFile ? (
+                <RegionsPanel />
+              ) : (
+                <div className="h-full flex items-center justify-center bg-zinc-850">
+                  <div className="text-center text-zinc-500">
+                    <svg className="w-12 h-12 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
+                    </svg>
+                    <p className="text-sm">Import video to see regions</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Center column - Flow Canvas */}
+            <div className="flex-1 bg-zinc-900">
               <FlowCanvas />
             </div>
-            
-            {/* Video timeline */}
-            {showTimeline && videoFile && (
-              <div className="h-64 border-t border-zinc-200">
-                <VideoTimeline
-                  videoFile={videoFile}
-                  segments={segments}
-                  selectedSegmentId={selectedSegmentId || undefined}
-                  onSegmentsChange={updateSegments}
-                  onSegmentSelect={selectSegment}
-                />
-              </div>
-            )}
+
+            {/* Right column - Sidebar */}
+            <div className="w-96 flex-shrink-0">
+              <Sidebar />
+            </div>
           </div>
-          
-          {/* Sidebar */}
-          <Sidebar />
+
+          {/* Bottom panel - Timeline */}
+          {videoFile && (
+            <div className="h-48 border-t border-zinc-800 flex-shrink-0">
+              <VideoTimeline
+                videoFile={videoFile}
+                segments={segments}
+                selectedSegmentId={selectedSegmentId || undefined}
+                onSegmentsChange={updateSegments}
+                onSegmentSelect={selectSegment}
+              />
+            </div>
+          )}
         </div>
 
         {/* Video reload modal */}

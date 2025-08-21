@@ -23,6 +23,12 @@ interface VideoStore {
   supportsOPFS: boolean;
   isStorageInitialized: boolean;
   
+  // Timeline communication
+  timelineController: {
+    playSegment?: (segmentId: string) => void;
+    seekToTime?: (time: number) => void;
+  };
+  
   // Actions
   initializeStorage: () => Promise<void>;
   setVideo: (file: File | null, saveToStorage?: boolean) => Promise<void>;
@@ -34,6 +40,10 @@ interface VideoStore {
   selectSegment: (segmentId: string | null) => void;
   clearVideo: () => void;
   tryRestoreVideo: () => Promise<boolean>;
+  
+  // Timeline controller methods
+  setTimelineController: (controller: VideoStore['timelineController']) => void;
+  playSegmentInTimeline: (segmentId: string) => void;
 }
 
 const storage = VideoStorageService.getInstance();
@@ -49,6 +59,7 @@ export const useVideoStore = create<VideoStore>()(
       showTimeline: false,
       supportsOPFS: false,
       isStorageInitialized: false,
+      timelineController: {},
 
       initializeStorage: async () => {
         const initialized = await storage.initialize();
@@ -173,8 +184,18 @@ export const useVideoStore = create<VideoStore>()(
           videoMetadata: null,
           segments: [],
           selectedSegmentId: null,
-          showTimeline: false
+          showTimeline: false,
+          timelineController: {}
         });
+      },
+      
+      setTimelineController: (controller) => set({ timelineController: controller }),
+      
+      playSegmentInTimeline: (segmentId) => {
+        const state = get();
+        if (state.timelineController.playSegment) {
+          state.timelineController.playSegment(segmentId);
+        }
       }
     }),
     {

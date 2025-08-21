@@ -2,3 +2,260 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    /* Dla wszystkich elementów */
+    *::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+    
+    *::-webkit-scrollbar-track {
+      @apply bg-gray-900;
+    }
+    
+    *::-webkit-scrollbar-thumb {
+      @apply bg-gray-600 rounded-md;
+    }
+    
+    *::-webkit-scrollbar-thumb:hover {
+      @apply bg-gray-500;
+    }
+    
+    /* Dla Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #4b5563 #1f2937;
+    }
+  }
+
+/* Custom React Flow styles - Minimal Industrial Design */
+.react-flow__renderer {
+    background: #000000;
+  }
+  
+  .react-flow__background {
+    background: #000000;
+  }
+  
+  /* Background pattern dots/lines jeśli używasz */
+  .react-flow__background pattern {
+    stroke: #1a1a1a !important;
+  }
+  
+  /* Główny kontener */
+  .react-flow {
+    background-color: #000000 !important;
+  }
+  
+  /* Pane (główny obszar) */
+  .react-flow__pane {
+    background-color: #000000 !important;
+  }
+  
+  /* Viewport */
+  .react-flow__viewport {
+    background-color: #000000 !important;
+  }
+  
+  .react-flow__minimap {
+    background: #0a0a0a !important;
+    border: 1px solid #262626;
+    border-radius: 0;
+    overflow: hidden;
+  }
+  
+  /* Minimap mask */
+  .react-flow__minimap-mask {
+    fill: #000000 !important;
+    fill-opacity: 0.7 !important;
+  }
+  
+  /* Minimap node colors */
+  .react-flow__minimap-node {
+    fill: #262626 !important;
+    stroke: #404040 !important;
+  }
+  
+  .react-flow__controls {
+    background: #0a0a0a !important;
+    border: 1px solid #262626;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  .react-flow__controls-button {
+    background: #0a0a0a !important;
+    border-bottom: 1px solid #262626;
+    color: #525252;
+    width: 30px;
+    height: 30px;
+    border-radius: 0;
+  }
+  
+  .react-flow__controls-button:hover {
+    background: #1a1a1a !important;
+    color: #d4d4d8;
+  }
+  
+  .react-flow__controls-button svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  /* Node styles */
+  .react-flow__node {
+    border-radius: 0 !important;
+    background: #0a0a0a !important;
+    color: #e5e5e5 !important;
+    border: 1px solid #262626 !important;
+  }
+  
+  .react-flow__node.selected {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 1px #3b82f6 !important;
+  }
+  
+  /* Edge styles */
+  .react-flow__edge-path {
+    stroke: #404040 !important;
+    stroke-width: 1px !important;
+    transition: stroke 0.2s ease, stroke-width 0.2s ease;
+  }
+  
+  .react-flow__edge:hover .react-flow__edge-path {
+    stroke: #3b82f6 !important;
+    stroke-width: 2px !important;
+  }
+  
+  .react-flow__edge.selected .react-flow__edge-path {
+    stroke: #3b82f6 !important;
+  }
+  
+  /* Edge text background */
+  .react-flow__edge-text {
+    fill: #e5e5e5 !important;
+  }
+  
+  .react-flow__edge-textbg {
+    fill: #000000 !important;
+  }
+  
+  /* Connection line */
+  .react-flow__connection-path {
+    stroke: #3b82f6;
+    stroke-width: 1;
+    stroke-dasharray: 2 2;
+  }
+  
+  /* Selection box */
+  .react-flow__selection {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+  }
+  
+  /* Attribution (React Flow watermark) */
+  .react-flow__attribution {
+    background: #000000 !important;
+    color: #404040 !important;
+  }
+  
+  .react-flow__attribution a {
+    color: #525252 !important;
+  }
+  
+  /* Remove all rounded corners */
+  * {
+    border-radius: 0 !important;
+  }
+  
+  /* Handle styles */
+  .react-flow__handle {
+    border-radius: 0 !important;
+    width: 8px !important;
+    height: 16px !important;
+    background: #262626 !important;
+    border: 1px solid #404040 !important;
+  }
+  
+  .react-flow__handle:hover {
+    background: #3b82f6 !important;
+    border-color: #2563eb !important;
+  }
+  
+  /* Handle when connecting */
+  .react-flow__handle-connecting {
+    background: #3b82f6 !important;
+  }
+  
+  /* Handle when valid connection */
+  .react-flow__handle-valid {
+    background: #10b981 !important;
+  }
+  
+  /* Disable node animations for cleaner look */
+  .react-flow__node {
+    transition: none;
+  }
+  
+  .react-flow__node.selected {
+    filter: none;
+  }
+  
+  /* Zoompane */
+  .react-flow__zoompane {
+    background: #000000 !important;
+  }
+  
+  /* Panel (jeśli używasz) */
+  .react-flow__panel {
+    background: #0a0a0a !important;
+    color: #e5e5e5 !important;
+    border: 1px solid #262626 !important;
+  }
+  
+  /* Controls button icons - force transparent background */
+  .react-flow__controls-button {
+    background: transparent !important;
+    border: none !important;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .react-flow__controls {
+    background: #0a0a0a !important;
+    border: 1px solid #262626;
+    padding: 4px;
+    gap: 2px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .react-flow__controls-button:hover {
+    background: #1a1a1a !important;
+  }
+  
+  /* Force icon SVG colors */
+  .react-flow__controls-button svg {
+    fill: #525252 !important;
+    stroke: #525252 !important;
+    background: transparent !important;
+  }
+  
+  .react-flow__controls-button:hover svg {
+    fill: #d4d4d8 !important;
+    stroke: #d4d4d8 !important;
+  }
+  
+  /* Remove any potential white backgrounds from icon containers */
+  .react-flow__controls-button * {
+    background: transparent !important;
+  }
+  
+  /* Ensure no white boxes around icons */
+  .react-flow__controls-button::before,
+  .react-flow__controls-button::after {
+    display: none !important;
+  }
