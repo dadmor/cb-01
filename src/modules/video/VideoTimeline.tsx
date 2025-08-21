@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { VideoSegment } from '@/types';
 import { useVideoStore } from '@/modules/video/store';
 
-// Memoized waveform component to prevent re-renders
+// Memoized waveform component
 const Waveform = memo(() => {
   const [waveformData] = useState(() => 
     Array.from({ length: 100 }, () => 20 + Math.random() * 60)
@@ -13,13 +13,14 @@ const Waveform = memo(() => {
       {waveformData.map((height, i) => (
         <div
           key={i}
-          className="absolute bg-zinc-600"
+          className="absolute"
           style={{
             left: `${i}%`,
             width: '0.8%',
             height: `${height}%`,
             top: '50%',
-            transform: 'translateY(-50%)'
+            transform: 'translateY(-50%)',
+            backgroundColor: '#3a3a3a'
           }}
         />
       ))}
@@ -36,29 +37,47 @@ const TimelineSegment = memo<{
 }>(({ segment, duration, isPlaying, isSelected }) => {
   return (
     <div
-      className={`absolute top-0 bottom-0 border-2 ${
-        isPlaying ? 'bg-red-500/30 border-red-500' :
-        isSelected ? 'bg-blue-500/30 border-blue-500' :
-        'bg-blue-400/20 border-blue-400'
-      }`}
+      className="absolute top-0 bottom-0"
       style={{
         left: `${(segment.start / duration) * 100}%`,
         width: `${((segment.end - segment.start) / duration) * 100}%`,
-        minWidth: '10px'
+        minWidth: '10px',
+        backgroundColor: isPlaying ? '#E84E3680' : isSelected ? '#E84E3640' : '#2d374260',
+        border: `2px solid ${isPlaying ? '#E84E36' : isSelected ? '#E84E36' : '#3a4753'}`,
+        transition: 'all 0.15s ease'
       }}
     >
       {/* Resize handles */}
       <div 
-        className="absolute left-0 top-0 bottom-0 w-1 bg-transparent hover:bg-blue-400 cursor-ew-resize"
-        style={{ marginLeft: '-2px' }}
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize"
+        style={{ 
+          marginLeft: '-2px',
+          backgroundColor: 'transparent',
+          '&:hover': { backgroundColor: '#E84E36' }
+        }}
       />
       <div 
-        className="absolute right-0 top-0 bottom-0 w-1 bg-transparent hover:bg-blue-400 cursor-ew-resize"
-        style={{ marginRight: '-2px' }}
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize"
+        style={{ 
+          marginRight: '-2px',
+          backgroundColor: 'transparent',
+          '&:hover': { backgroundColor: '#E84E36' }
+        }}
       />
       {/* Label */}
       {segment.label && (
-        <div className="absolute top-1 left-1 text-xs text-white truncate pointer-events-none">
+        <div style={{
+          position: 'absolute',
+          top: '4px',
+          left: '4px',
+          fontSize: '11px',
+          color: '#ccc',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: 'calc(100% - 8px)',
+          pointerEvents: 'none'
+        }}>
           {segment.label}
         </div>
       )}
@@ -90,7 +109,7 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingSegmentId, setPlayingSegmentId] = useState<string | null>(null);
   const [loopSegment, setLoopSegment] = useState(false);
-  const [volume, setVolume] = useState(100);
+  const [volume, setVolume] = useState(50);
   const [isCreatingSegment, setIsCreatingSegment] = useState(false);
   const [newSegmentStart, setNewSegmentStart] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -98,6 +117,31 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
   const [draggedSegmentId, setDraggedSegmentId] = useState<string | null>(null);
   const [dragStartX, setDragStartX] = useState(0);
   const [dragStartSegment, setDragStartSegment] = useState<VideoSegment | null>(null);
+
+  // DaVinci styles
+  const davinciColors = {
+    bg: '#1a1a1a',
+    bgDark: '#0f0f0f',
+    bgLight: '#252525',
+    border: '#0a0a0a',
+    borderLight: '#2a2a2a',
+    text: '#ccc',
+    textDim: '#666',
+    accent: '#E84E36',
+    trackBg: '#0f0f0f',
+    rulerBg: '#1a1a1a'
+  };
+
+  const davinciButtonStyle = {
+    backgroundColor: '#2a2a2a',
+    border: '1px solid #3a3a3a',
+    color: '#999',
+    fontSize: '11px',
+    fontWeight: 500,
+    padding: '4px 8px',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease'
+  };
 
   // Setup video URL
   useEffect(() => {
@@ -357,6 +401,14 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
   };
 
+  const formatTimecode = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    const frames = Math.floor((seconds % 1) * 30); // Assuming 30fps
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+  };
+
   const getCursorStyle = (e: React.MouseEvent): string => {
     if (!timelineRef.current || isDragging) return isDragging ? 'grabbing' : 'default';
     
@@ -387,91 +439,321 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
   };
 
   return (
-    <div className="h-full flex bg-zinc-900">
-      {/* Video preview */}
-      <div className="w-80 bg-black flex flex-col flex-shrink-0">
-        <div className="flex-1 relative">
+    <div className="h-full flex" style={{ backgroundColor: davinciColors.bg }}>
+      {/* Left side - Timeline tracks */}
+      <div className="flex-1 flex flex-col">
+        {/* Timeline ruler */}
+        <div style={{ 
+          height: '32px',
+          backgroundColor: davinciColors.rulerBg,
+          borderBottom: `1px solid ${davinciColors.border}`,
+          position: 'relative'
+        }}>
+          {/* Time markers */}
+          {duration > 0 && Array.from({ length: Math.floor(duration) + 1 }, (_, i) => i).map(second => (
+            <div
+              key={second}
+              style={{
+                position: 'absolute',
+                left: `${(second / duration) * 100}%`,
+                top: 0,
+                height: '100%',
+                borderLeft: `1px solid ${davinciColors.borderLight}`,
+                fontSize: '10px',
+                color: davinciColors.textDim,
+                paddingLeft: '4px',
+                paddingTop: '2px'
+              }}
+            >
+              {second % 5 === 0 && formatTime(second)}
+            </div>
+          ))}
+        </div>
+
+        {/* Timeline track area */}
+        <div className="flex-1 relative" style={{ backgroundColor: davinciColors.trackBg }}>
+          {/* Track labels */}
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: '80px',
+            height: '100%',
+            backgroundColor: davinciColors.bgLight,
+            borderRight: `1px solid ${davinciColors.border}`,
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <div style={{
+              padding: '8px',
+              fontSize: '11px',
+              color: davinciColors.textDim,
+              borderBottom: `1px solid ${davinciColors.border}`
+            }}>
+              V1
+            </div>
+          </div>
+
+          {/* Timeline content */}
+          <div style={{ 
+            marginLeft: '80px',
+            height: '100%',
+            position: 'relative',
+            padding: '8px 0'
+          }}>
+            <div 
+              ref={timelineRef}
+              className="relative"
+              style={{ 
+                height: '60px',
+                backgroundColor: davinciColors.bgDark,
+                border: `1px solid ${davinciColors.borderLight}`,
+                cursor: isDragging ? 'grabbing' : 'default'
+              }}
+              onMouseDown={handleTimelineMouseDown}
+              onMouseMove={(e) => {
+                e.currentTarget.style.cursor = getCursorStyle(e);
+                handleTimelineMouseMove(e);
+              }}
+              onMouseUp={handleTimelineMouseUp}
+              onMouseLeave={() => setIsCreatingSegment(false)}
+            >
+              {/* Waveform background */}
+              <Waveform />
+              
+              {/* Progress */}
+              <div
+                className="absolute top-0 bottom-0"
+                style={{ 
+                  width: `${(currentTime / duration) * 100}%`,
+                  backgroundColor: 'rgba(232, 78, 54, 0.1)'
+                }}
+              />
+              
+              {/* Segments */}
+              {segments.map(segment => (
+                <TimelineSegment
+                  key={segment.id}
+                  segment={segment}
+                  duration={duration}
+                  isPlaying={segment.id === playingSegmentId}
+                  isSelected={segment.id === selectedSegmentId}
+                />
+              ))}
+              
+              {/* Current segment being created */}
+              {isCreatingSegment && (
+                <div
+                  className="absolute top-0 bottom-0"
+                  style={{
+                    left: `${(Math.min(newSegmentStart, currentTime) / duration) * 100}%`,
+                    width: `${(Math.abs(currentTime - newSegmentStart) / duration) * 100}%`,
+                    backgroundColor: 'rgba(74, 222, 128, 0.3)',
+                    border: '2px solid #4ade80'
+                  }}
+                />
+              )}
+              
+              {/* Playhead */}
+              <div
+                className="absolute top-0 bottom-0 pointer-events-none"
+                style={{ 
+                  left: `${(currentTime / duration) * 100}%`,
+                  width: '2px',
+                  backgroundColor: davinciColors.accent,
+                  boxShadow: '0 0 4px rgba(232, 78, 54, 0.5)'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Transport controls */}
+        <div style={{
+          height: '48px',
+          backgroundColor: davinciColors.bgLight,
+          borderTop: `1px solid ${davinciColors.border}`,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 12px',
+          gap: '8px'
+        }}>
+          <button
+            onClick={() => videoRef.current && (videoRef.current.currentTime = 0)}
+            style={{ ...davinciButtonStyle, padding: '6px' }}
+            title="Go to start"
+          >
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/>
+            </svg>
+          </button>
+          
+          <button
+            onClick={() => videoRef.current && (videoRef.current.currentTime -= 1)}
+            style={{ ...davinciButtonStyle, padding: '6px' }}
+            title="Previous frame"
+          >
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/>
+            </svg>
+          </button>
+          
+          <button
+            onClick={() => {
+              if (videoRef.current) {
+                if (videoRef.current.paused) {
+                  videoRef.current.play();
+                } else {
+                  videoRef.current.pause();
+                  setPlayingSegmentId(null);
+                }
+              }
+            }}
+            style={{
+              ...davinciButtonStyle,
+              backgroundColor: davinciColors.accent,
+              borderColor: davinciColors.accent,
+              color: 'white',
+              padding: '6px 12px'
+            }}
+          >
+            {isPlaying ? (
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"/>
+              </svg>
+            ) : (
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
+              </svg>
+            )}
+          </button>
+          
+          <button
+            onClick={() => videoRef.current && (videoRef.current.currentTime += 1)}
+            style={{ ...davinciButtonStyle, padding: '6px' }}
+            title="Next frame"
+          >
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/>
+            </svg>
+          </button>
+          
+          <button
+            onClick={() => videoRef.current && (videoRef.current.currentTime = duration)}
+            style={{ ...davinciButtonStyle, padding: '6px' }}
+            title="Go to end"
+          >
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"/>
+            </svg>
+          </button>
+
+          <div style={{ width: '1px', height: '20px', backgroundColor: davinciColors.borderLight, margin: '0 8px' }} />
+
+          {/* Loop button */}
+          <button
+            onClick={() => setLoopSegment(!loopSegment)}
+            style={{
+              ...davinciButtonStyle,
+              backgroundColor: loopSegment ? davinciColors.accent : '#2a2a2a',
+              borderColor: loopSegment ? davinciColors.accent : '#3a3a3a',
+              color: loopSegment ? 'white' : '#999'
+            }}
+            title={loopSegment ? "Disable loop" : "Enable loop"}
+          >
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"/>
+            </svg>
+          </button>
+
+          {selectedSegmentId && (
+            <>
+              <div style={{ width: '1px', height: '20px', backgroundColor: davinciColors.borderLight, margin: '0 8px' }} />
+              <button
+                onClick={deleteSelectedSegment}
+                style={{
+                  ...davinciButtonStyle,
+                  color: '#ef4444'
+                }}
+              >
+                Delete Region
+              </button>
+            </>
+          )}
+
+          {/* Timecode display */}
+          <div className="flex-1" />
+          <div style={{
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            color: davinciColors.text,
+            backgroundColor: davinciColors.bgDark,
+            padding: '4px 8px',
+            border: `1px solid ${davinciColors.borderLight}`
+          }}>
+            {formatTimecode(currentTime)}
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Video preview (matching inspector width) */}
+      <div style={{ 
+        width: '350px',
+        backgroundColor: davinciColors.bgDark,
+        borderLeft: `1px solid ${davinciColors.border}`,
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {/* Preview header */}
+        <div style={{
+          height: '32px',
+          backgroundColor: davinciColors.bgLight,
+          borderBottom: `1px solid ${davinciColors.border}`,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 12px'
+        }}>
+          <span style={{ fontSize: '11px', color: davinciColors.textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            SOURCE VIEWER
+          </span>
+        </div>
+
+        {/* Video preview */}
+        <div className="flex-1 relative bg-black">
           <video 
             ref={videoRef}
             src={videoUrl}
             className="w-full h-full object-contain"
           />
           {playingSegmentId && (
-            <div className="absolute top-2 right-2 flex items-center gap-2">
-              <div className="bg-blue-600 text-white px-2 py-1 rounded text-xs">
-                Playing Segment
-              </div>
-              <button
-                onClick={() => setLoopSegment(!loopSegment)}
-                className={`p-1.5 rounded ${
-                  loopSegment ? 'bg-blue-600 text-white' : 'bg-zinc-700 text-zinc-300'
-                }`}
-                title={loopSegment ? "Disable loop" : "Enable loop"}
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd"/>
-                </svg>
-              </button>
+            <div style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              backgroundColor: davinciColors.accent,
+              color: 'white',
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: 500
+            }}>
+              PLAYING SEGMENT
             </div>
           )}
         </div>
         
-        {/* Video controls */}
-        <div className="p-3 bg-zinc-850 border-t border-zinc-700">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => videoRef.current && (videoRef.current.currentTime -= 5)}
-                className="p-1.5 text-zinc-300 hover:text-white hover:bg-zinc-700 rounded"
-                title="Skip backward 5s"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M8.445 14.832A1 1 0 0010 14v-8a1 1 0 00-1.555-.832L5 8.101V6a1 1 0 00-2 0v8a1 1 0 002 0v-2.101l3.445 2.933z"/>
-                </svg>
-              </button>
-              
-              <button
-                onClick={() => {
-                  if (videoRef.current) {
-                    if (videoRef.current.paused) {
-                      videoRef.current.play();
-                    } else {
-                      videoRef.current.pause();
-                      setPlayingSegmentId(null);
-                    }
-                  }
-                }}
-                className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                {isPlaying ? (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"/>
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
-                  </svg>
-                )}
-              </button>
-              
-              <button
-                onClick={() => videoRef.current && (videoRef.current.currentTime += 5)}
-                className="p-1.5 text-zinc-300 hover:text-white hover:bg-zinc-700 rounded"
-                title="Skip forward 5s"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L8 11.899V14a1 1 0 002 0V6a1 1 0 00-2 0v2.101L4.555 5.168zM15 6v8a1 1 0 01-2 0V6a1 1 0 012 0z"/>
-                </svg>
-              </button>
-            </div>
-            <span className="text-xs text-zinc-400 font-mono">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
+        {/* Video info */}
+        <div style={{
+          padding: '12px',
+          backgroundColor: davinciColors.bgLight,
+          borderTop: `1px solid ${davinciColors.border}`
+        }}>
+          <div style={{ fontSize: '11px', color: davinciColors.textDim, marginBottom: '8px' }}>
+            {videoFile.name}
           </div>
           
           {/* Volume control */}
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+            <svg width="14" height="14" fill={davinciColors.textDim} viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z"/>
             </svg>
             <input
@@ -486,92 +768,18 @@ export const VideoTimeline: React.FC<VideoTimelineProps> = ({
                   videoRef.current.volume = vol / 100;
                 }
               }}
-              className="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer"
+              style={{
+                flex: 1,
+                height: '4px',
+                backgroundColor: davinciColors.borderLight,
+                outline: 'none',
+                WebkitAppearance: 'none'
+              }}
             />
-          </div>
-        </div>
-      </div>
-
-      {/* Timeline area */}
-      <div className="flex-1 flex flex-col bg-zinc-850">
-        {/* Timeline toolbar */}
-        <div className="h-10 bg-zinc-800 border-b border-zinc-700 px-4 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-zinc-400">
-              Click and drag on timeline to create segment
+            <span style={{ fontSize: '11px', color: davinciColors.textDim, width: '30px', textAlign: 'right' }}>
+              {volume}%
             </span>
-            {selectedSegmentId && (
-              <button
-                onClick={deleteSelectedSegment}
-                className="text-xs text-red-400 hover:text-red-300 hover:bg-zinc-700 px-2 py-1 rounded"
-              >
-                Delete Selected
-              </button>
-            )}
           </div>
-        </div>
-
-        {/* Waveform/Timeline */}
-        <div className="flex-1 relative overflow-hidden p-4">
-          <div 
-            ref={timelineRef}
-            className="relative h-16 bg-zinc-800 rounded"
-            style={{ cursor: isDragging ? 'grabbing' : 'default' }}
-            onMouseDown={handleTimelineMouseDown}
-            onMouseMove={(e) => {
-              e.currentTarget.style.cursor = getCursorStyle(e);
-              handleTimelineMouseMove(e);
-            }}
-            onMouseUp={handleTimelineMouseUp}
-            onMouseLeave={() => setIsCreatingSegment(false)}
-          >
-            {/* Memoized waveform background */}
-            <Waveform />
-            
-            {/* Progress */}
-            <div
-              className="absolute top-0 bottom-0 bg-blue-600/20"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
-            />
-            
-            {/* Segments */}
-            {segments.map(segment => (
-              <TimelineSegment
-                key={segment.id}
-                segment={segment}
-                duration={duration}
-                isPlaying={segment.id === playingSegmentId}
-                isSelected={segment.id === selectedSegmentId}
-              />
-            ))}
-            
-            {/* Current segment being created */}
-            {isCreatingSegment && (
-              <div
-                className="absolute top-0 bottom-0 bg-green-500/30 border-2 border-green-500"
-                style={{
-                  left: `${(Math.min(newSegmentStart, currentTime) / duration) * 100}%`,
-                  width: `${(Math.abs(currentTime - newSegmentStart) / duration) * 100}%`
-                }}
-              />
-            )}
-            
-            {/* Playhead */}
-            <div
-              className="absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none"
-              style={{ left: `${(currentTime / duration) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Status bar */}
-        <div className="h-6 bg-zinc-800 border-t border-zinc-700 px-4 flex items-center justify-between flex-shrink-0">
-          <span className="text-xs text-zinc-400">
-            {segments.length} segments • {videoFile.name}
-          </span>
-          <span className="text-xs text-zinc-400">
-            {duration > 0 ? 'Ready' : 'Loading...'}
-          </span>
         </div>
       </div>
     </div>

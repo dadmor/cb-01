@@ -11,21 +11,21 @@
     }
     
     *::-webkit-scrollbar-track {
-      @apply bg-gray-900;
+      @apply bg-zinc-900;
     }
     
     *::-webkit-scrollbar-thumb {
-      @apply bg-gray-600 rounded-md;
+      @apply bg-zinc-600 rounded-md;
     }
     
     *::-webkit-scrollbar-thumb:hover {
-      @apply bg-gray-500;
+      @apply bg-zinc-500;
     }
     
     /* Dla Firefox */
     * {
       scrollbar-width: thin;
-      scrollbar-color: #4b5563 #1f2937;
+      scrollbar-color: #45474a #1e1e1f;
     }
   }
 

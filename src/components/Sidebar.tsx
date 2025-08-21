@@ -45,94 +45,171 @@ export const Sidebar: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const davinciPanelStyle = {
+    backgroundColor: '#1e1e1e',
+    color: '#ccc'
+  };
+
+  const davinciHeaderStyle = {
+    backgroundColor: '#252525',
+    borderBottom: '1px solid #0a0a0a',
+    color: '#999',
+    fontSize: '11px',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.5px',
+    padding: '8px 12px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  };
+
+  const davinciSectionStyle = {
+    backgroundColor: '#1a1a1a',
+    border: '1px solid #2a2a2a',
+    marginBottom: '1px'
+  };
+
+  const davinciInputStyle = {
+    backgroundColor: '#1a1a1a',
+    border: '1px solid #2a2a2a',
+    color: '#ccc',
+    fontSize: '12px',
+    padding: '4px 8px',
+    width: '100%',
+    outline: 'none'
+  };
+
+  const davinciButtonStyle = {
+    backgroundColor: '#2a2a2a',
+    border: '1px solid #3a3a3a',
+    color: '#999',
+    fontSize: '12px',
+    fontWeight: 500,
+    padding: '6px 12px',
+    cursor: 'pointer'
+  };
+
+  const davinciButtonPrimaryStyle = {
+    ...davinciButtonStyle,
+    backgroundColor: '#E84E36',
+    border: '1px solid #E84E36',
+    color: 'white'
+  };
+
   return (
-    <div className="w-full bg-zinc-900 border-l border-zinc-800 flex flex-col h-full text-zinc-200">
-      {/* Header */}
-      <div className="h-10 bg-zinc-900 border-b border-zinc-800 px-4 flex items-center justify-between flex-shrink-0">
-        <h2 className="text-xs font-medium text-zinc-400">
-          {mode === "edit" ? "Inspector" : "Play Mode"}
-          {isGameOver && " - Game Over"}
-        </h2>
-        
-        <div className="flex gap-1">
-          {mode === "edit" ? (
+    <div style={davinciPanelStyle} className="w-full h-full flex flex-col">
+      {/* Play Controls */}
+      {mode === "edit" && (
+        <div style={{ padding: '12px', borderBottom: '1px solid #0a0a0a' }}>
+          <button
+            onClick={() => startGame(START_NODE_ID)}
+            style={davinciButtonPrimaryStyle}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <Play size={14} fill="currentColor" />
+            <span>Preview Story</span>
+          </button>
+        </div>
+      )}
+
+      {mode === "play" && (
+        <div style={{ padding: '12px', borderBottom: '1px solid #0a0a0a' }}>
+          <div className="flex gap-2">
             <button
-              onClick={() => startGame(START_NODE_ID)}
-              className="px-2 py-1 bg-blue-600 text-white text-xs hover:bg-blue-700 transition-colors flex items-center gap-1"
+              onClick={() => resetGame(START_NODE_ID)}
+              style={davinciButtonStyle}
+              className="flex-1 flex items-center justify-center gap-1"
             >
-              <Play size={12} fill="currentColor" />
-              Play
+              <RotateCcw size={12} />
+              <span style={{ fontSize: '11px' }}>Reset</span>
             </button>
-          ) : (
-            <>
-              <button
-                onClick={() => resetGame(START_NODE_ID)}
-                className="px-2 py-1 text-zinc-500 text-xs hover:text-zinc-300 transition-colors flex items-center gap-1"
-              >
-                <RotateCcw size={12} />
-                Reset
-              </button>
-              <button
-                onClick={stopGame}
-                className="px-2 py-1 text-zinc-500 text-xs hover:text-zinc-300 transition-colors flex items-center gap-1"
-              >
-                <Square size={12} fill="currentColor" />
-                Stop
-              </button>
-            </>
+            <button
+              onClick={stopGame}
+              style={davinciButtonStyle}
+              className="flex-1 flex items-center justify-center gap-1"
+            >
+              <Square size={12} fill="currentColor" />
+              <span style={{ fontSize: '11px' }}>Stop</span>
+            </button>
+          </div>
+          {currentNode && isSceneNode(currentNode) && (
+            <div style={{ 
+              marginTop: '12px', 
+              padding: '8px', 
+              backgroundColor: '#252525',
+              border: '1px solid #E84E36'
+            }}>
+              <div style={{ fontSize: '11px', color: '#E84E36', marginBottom: '4px' }}>
+                CURRENT SCENE
+              </div>
+              <div style={{ fontSize: '13px', color: '#ccc' }}>
+                {currentNode.data.label}
+              </div>
+            </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {mode === "edit" ? (
           <>
-            {/* Block snippets - only show when a scene node is selected */}
+            {/* Add Blocks - only when scene selected */}
             {selectedNode && isSceneNode(selectedNode) && (
-              <div className="border-b border-zinc-800/50">
-                <div className="px-4 py-2 border-b border-zinc-800/50">
-                  <h3 className="text-xs font-medium text-zinc-600 uppercase tracking-wider">Add Blocks</h3>
+              <div style={davinciSectionStyle}>
+                <div style={davinciHeaderStyle}>
+                  <span>ADD STORY BLOCKS</span>
                 </div>
-                <div className="p-2 grid grid-cols-2 gap-1">
-                  {blockSnippets.map(snippet => (
-                    <button
-                      key={snippet.id}
-                      onClick={() => addBlockSnippet(snippet.id, selectedNode.id)}
-                      className="p-2 text-left hover:bg-zinc-850 transition-colors group"
-                    >
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-sm opacity-50 group-hover:opacity-100">{snippet.icon}</span>
-                        <span className="text-xs font-medium text-zinc-500 group-hover:text-zinc-300">{snippet.name}</span>
-                      </div>
-                      <p className="text-xs text-zinc-700 line-clamp-1">{snippet.description}</p>
-                    </button>
-                  ))}
+                <div style={{ padding: '8px' }}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {blockSnippets.map(snippet => (
+                      <button
+                        key={snippet.id}
+                        onClick={() => addBlockSnippet(snippet.id, selectedNode.id)}
+                        style={{
+                          ...davinciButtonStyle,
+                          fontSize: '11px',
+                          padding: '8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        className="hover:border-[#4a4a4a] hover:bg-[#333]"
+                      >
+                        <span style={{ fontSize: '16px', opacity: 0.6 }}>{snippet.icon}</span>
+                        <span>{snippet.name}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Node editor */}
+            {/* Node Properties */}
             {selectedNode ? (
-              <div>
-                <div className="px-4 py-2 border-b border-zinc-800/50 flex items-center justify-between">
-                  <h3 className="text-xs font-medium text-zinc-600 uppercase tracking-wider">
-                    {isSceneNode(selectedNode) ? "Scene" : "Choice"} Properties
-                  </h3>
+              <div style={davinciSectionStyle}>
+                <div style={davinciHeaderStyle}>
+                  <span>{isSceneNode(selectedNode) ? "SCENE" : "CHOICE"} PROPERTIES</span>
                   {selectedNode.id !== START_NODE_ID && (
                     <button
                       onClick={() => deleteNode(selectedNode.id)}
-                      className="text-xs text-zinc-700 hover:text-red-500 transition-colors"
+                      style={{ color: '#666', fontSize: '11px' }}
+                      className="hover:text-red-500"
                     >
                       Delete
                     </button>
                   )}
                 </div>
 
-                <div className="space-y-px">
+                <div style={{ padding: '12px' }}>
                   {/* Name */}
-                  <div className="px-4 py-2 border-b border-zinc-800/50">
-                    <label className="block text-xs text-zinc-600 mb-1">Name</label>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                      NAME
+                    </label>
                     <input
                       type="text"
                       value={selectedNode.data.label}
@@ -140,16 +217,18 @@ export const Sidebar: React.FC = () => {
                         ...selectedNode.data,
                         label: e.target.value
                       })}
-                      className="w-full px-0 py-0.5 bg-transparent border-b border-zinc-800 text-xs text-zinc-300 focus:border-blue-600 focus:outline-none"
+                      style={davinciInputStyle}
                     />
                   </div>
 
                   {isSceneNode(selectedNode) && (
                     <>
-                      {/* Video segment selector */}
+                      {/* Video segment */}
                       {segments.length > 0 && (
-                        <div className="px-4 py-2 border-b border-zinc-800/50">
-                          <label className="block text-xs text-zinc-600 mb-1">Video Segment</label>
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                            VIDEO SEGMENT
+                          </label>
                           <select
                             value={selectedNode.data.videoSegmentId || ""}
                             onChange={(e) => {
@@ -160,7 +239,7 @@ export const Sidebar: React.FC = () => {
                                 durationSec: segment ? Math.round(segment.duration) : selectedNode.data.durationSec
                               });
                             }}
-                            className="w-full px-0 py-0.5 bg-transparent border-b border-zinc-800 text-xs text-zinc-300 focus:border-blue-600 focus:outline-none"
+                            style={davinciInputStyle}
                           >
                             <option value="">None (manual duration)</option>
                             {segments.map((seg, i) => (
@@ -169,31 +248,14 @@ export const Sidebar: React.FC = () => {
                               </option>
                             ))}
                           </select>
-                          
-                          {/* Quick assign button if segment is selected in regions panel */}
-                          {selectedSegmentId && !selectedNode.data.videoSegmentId && (
-                            <button
-                              onClick={() => {
-                                const segment = segments.find(s => s.id === selectedSegmentId);
-                                if (segment) {
-                                  updateNode(selectedNode.id, {
-                                    ...selectedNode.data,
-                                    videoSegmentId: segment.id,
-                                    durationSec: Math.round(segment.duration)
-                                  });
-                                }
-                              }}
-                              className="mt-1.5 w-full px-2 py-1 text-xs text-blue-500 hover:text-blue-400 transition-colors"
-                            >
-                              ← Use Selected Region
-                            </button>
-                          )}
                         </div>
                       )}
 
                       {/* Duration */}
-                      <div className="px-4 py-2 border-b border-zinc-800/50">
-                        <label className="block text-xs text-zinc-600 mb-1">Duration (seconds)</label>
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                          DURATION (SECONDS)
+                        </label>
                         <input
                           type="number"
                           value={selectedNode.data.durationSec}
@@ -202,14 +264,19 @@ export const Sidebar: React.FC = () => {
                             durationSec: parseInt(e.target.value) || 0
                           })}
                           disabled={!!selectedNode.data.videoSegmentId}
-                          className="w-full px-0 py-0.5 bg-transparent border-b border-zinc-800 text-xs text-zinc-300 focus:border-blue-600 focus:outline-none disabled:opacity-50"
+                          style={{
+                            ...davinciInputStyle,
+                            opacity: selectedNode.data.videoSegmentId ? 0.5 : 1
+                          }}
                         />
                       </div>
 
                       {/* Condition */}
-                      <div className="px-4 py-2 border-b border-zinc-800/50">
-                        <label className="block text-xs text-zinc-600 mb-1">Access Condition</label>
-                        <div className="flex gap-1">
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                          ACCESS CONDITION
+                        </label>
+                        <div className="flex gap-2">
                           <select
                             value={selectedNode.data.condition?.varName || ""}
                             onChange={(e) => updateNode(selectedNode.id, {
@@ -220,7 +287,7 @@ export const Sidebar: React.FC = () => {
                                 value: selectedNode.data.condition?.value || 1
                               } : undefined
                             })}
-                            className="flex-1 px-0 py-0.5 bg-transparent border-b border-zinc-800 text-xs text-zinc-300 focus:border-blue-600 focus:outline-none"
+                            style={{ ...davinciInputStyle, flex: 1 }}
                           >
                             <option value="">Always accessible</option>
                             {variables.map(v => (
@@ -239,7 +306,7 @@ export const Sidebar: React.FC = () => {
                                     op: e.target.value as any
                                   }
                                 })}
-                                className="w-12 px-0 py-0.5 bg-transparent border-b border-zinc-800 text-xs text-zinc-300 focus:border-blue-600 focus:outline-none text-center"
+                                style={{ ...davinciInputStyle, width: '60px' }}
                               >
                                 <option value="lt">&lt;</option>
                                 <option value="lte">≤</option>
@@ -259,69 +326,64 @@ export const Sidebar: React.FC = () => {
                                     value: parseInt(e.target.value) || 0
                                   }
                                 })}
-                                className="w-12 px-0 py-0.5 bg-transparent border-b border-zinc-800 text-xs text-zinc-300 focus:border-blue-600 focus:outline-none text-center"
+                                style={{ ...davinciInputStyle, width: '60px' }}
                               />
                             </>
                           )}
                         </div>
                       </div>
-
-                      {/* Default choice */}
-                      {(() => {
-                        const choices = edges
-                          .filter(e => e.source === selectedNode.id)
-                          .map(e => nodes.find(n => n.id === e.target))
-                          .filter(n => n && isChoiceNode(n));
-                        
-                        return choices.length > 0 && (
-                          <div className="px-4 py-3 border-b border-zinc-800">
-                            <label className="block text-xs text-zinc-500 mb-1.5">
-                              Default Choice (after timer)
-                            </label>
-                            <select
-                              value={selectedNode.data.defaultChoiceId || ""}
-                              onChange={(e) => updateNode(selectedNode.id, {
-                                ...selectedNode.data,
-                                defaultChoiceId: e.target.value || undefined
-                              })}
-                              className="w-full px-2 py-1 bg-zinc-900 border-b border-zinc-700 text-sm text-zinc-200 focus:border-blue-500 focus:outline-none"
-                            >
-                              <option value="">End game</option>
-                              {choices.map(c => c && (
-                                <option key={c.id} value={c.id}>{c.data.label}</option>
-                              ))}
-                            </select>
-                          </div>
-                        );
-                      })()}
                     </>
                   )}
 
                   {isChoiceNode(selectedNode) && (
-                    <div className="px-4 py-2 border-b border-zinc-800/50">
-                      <label className="block text-xs text-zinc-600 mb-1">Effects</label>
-                      <div className="space-y-1">
+                    <div>
+                      <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '8px' }}>
+                        VARIABLE EFFECTS
+                      </label>
+                      <div style={{ backgroundColor: '#0f0f0f', padding: '8px', border: '1px solid #2a2a2a' }}>
                         {variables.map(v => {
                           const effect = selectedNode.data.effects[v.name] || 0;
                           return (
-                            <div key={v.name} className="flex items-center gap-2">
-                              <span className="w-16 text-xs text-zinc-500 font-mono">{v.name}</span>
+                            <div key={v.name} className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
+                              <span style={{ width: '80px', fontSize: '11px', color: '#666', fontFamily: 'monospace' }}>
+                                {v.name}
+                              </span>
                               <button
                                 onClick={() => updateNode(selectedNode.id, {
                                   ...selectedNode.data,
                                   effects: { ...selectedNode.data.effects, [v.name]: effect - 1 }
                                 })}
-                                className="w-5 h-5 text-zinc-600 hover:text-zinc-400 transition-colors"
+                                style={{
+                                  ...davinciButtonStyle,
+                                  width: '24px',
+                                  height: '24px',
+                                  padding: 0,
+                                  fontSize: '14px'
+                                }}
                               >
                                 -
                               </button>
-                              <span className="w-10 text-center text-xs font-mono text-zinc-400">{effect}</span>
+                              <span style={{ 
+                                width: '40px', 
+                                textAlign: 'center', 
+                                fontSize: '12px', 
+                                fontFamily: 'monospace',
+                                color: effect > 0 ? '#4ade80' : effect < 0 ? '#ef4444' : '#666'
+                              }}>
+                                {effect > 0 ? '+' : ''}{effect}
+                              </span>
                               <button
                                 onClick={() => updateNode(selectedNode.id, {
                                   ...selectedNode.data,
                                   effects: { ...selectedNode.data.effects, [v.name]: effect + 1 }
                                 })}
-                                className="w-5 h-5 text-zinc-600 hover:text-zinc-400 transition-colors"
+                                style={{
+                                  ...davinciButtonStyle,
+                                  width: '24px',
+                                  height: '24px',
+                                  padding: 0,
+                                  fontSize: '14px'
+                                }}
                               >
                                 +
                               </button>
@@ -334,37 +396,32 @@ export const Sidebar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* No selection */
-              <div className="px-4 py-8 text-center">
-                <p className="text-xs text-zinc-700 mb-3">No node selected</p>
+              <div style={{ padding: '24px', textAlign: 'center' }}>
+                <p style={{ color: '#666', fontSize: '12px', marginBottom: '16px' }}>
+                  No node selected
+                </p>
                 <button
                   onClick={addSceneNode}
-                  className="px-3 py-1.5 text-xs text-zinc-600 border border-dashed border-zinc-800 hover:border-zinc-700 hover:text-zinc-500 transition-colors"
+                  style={davinciButtonStyle}
+                  className="hover:border-[#4a4a4a] hover:bg-[#333]"
                 >
-                  <Plus size={12} className="inline mr-1" />
+                  <Plus size={12} className="inline mr-2" />
                   Add Scene
                 </button>
               </div>
             )}
           </>
         ) : (
-          /* Play mode display */
-          <div className="px-4 py-3">
-            {currentNode && isSceneNode(currentNode) && (
-              <div className="p-2 bg-zinc-850 border-l-2 border-blue-600/50">
-                <h3 className="font-medium text-xs mb-0.5 text-zinc-300">{currentNode.data.label}</h3>
-                {currentNode.data.description && (
-                  <p className="text-xs text-zinc-600">{currentNode.data.description}</p>
-                )}
-              </div>
-            )}
+          /* Play mode - current state display */
+          <div style={{ padding: '12px' }}>
+            {/* Current state info would go here */}
           </div>
         )}
 
-        {/* Variables section */}
-        <div className="border-t border-zinc-800/50">
-          <div className="px-4 py-2 border-b border-zinc-800/50 flex items-center justify-between">
-            <h3 className="text-xs font-medium text-zinc-600 uppercase tracking-wider">Variables</h3>
+        {/* Variables Section */}
+        <div style={davinciSectionStyle}>
+          <div style={davinciHeaderStyle}>
+            <span>VARIABLES</span>
             {mode === "edit" && (
               <button
                 onClick={() => {
@@ -373,22 +430,31 @@ export const Sidebar: React.FC = () => {
                     addVariable(VariablesManager.createVariable(name, 0));
                   }
                 }}
-                className="text-xs text-zinc-700 hover:text-zinc-500 transition-colors"
+                style={{ color: '#666', fontSize: '16px' }}
+                className="hover:text-[#999]"
               >
-                <Plus size={12} className="inline" />
+                <Plus size={12} />
               </button>
             )}
           </div>
           
-          <div className="py-1">
+          <div style={{ padding: '8px' }}>
             {variables.map(v => (
-              <div key={v.name} className="px-4 py-1 flex items-center justify-between hover:bg-zinc-850/30">
-                <span className="text-xs text-zinc-500 font-mono">{v.name}</span>
-                <div className="flex items-center gap-1">
+              <div key={v.name} className="flex items-center justify-between" style={{ 
+                padding: '6px 8px',
+                backgroundColor: '#0f0f0f',
+                marginBottom: '4px',
+                border: '1px solid #2a2a2a'
+              }}>
+                <span style={{ fontSize: '12px', color: '#999', fontFamily: 'monospace' }}>
+                  {v.name}
+                </span>
+                <div className="flex items-center gap-2">
                   {mode === "edit" && (
                     <button
                       onClick={() => removeVariable(v.name)}
-                      className="text-xs text-zinc-700 hover:text-red-500 transition-colors"
+                      style={{ color: '#666', fontSize: '10px' }}
+                      className="hover:text-red-500"
                     >
                       <X size={10} />
                     </button>
@@ -398,10 +464,16 @@ export const Sidebar: React.FC = () => {
                     value={v.value}
                     onChange={(e) => setVariable(v.name, parseInt(e.target.value) || 0)}
                     disabled={mode === "play"}
-                    className="w-12 px-1 py-0 bg-transparent border-b border-zinc-800 text-xs font-mono text-zinc-400 text-right focus:border-blue-600 focus:outline-none disabled:opacity-50"
+                    style={{
+                      ...davinciInputStyle,
+                      width: '60px',
+                      textAlign: 'right',
+                      fontFamily: 'monospace',
+                      opacity: mode === "play" ? 0.5 : 1
+                    }}
                   />
                   {mode === "play" && v.value !== v.initialValue && (
-                    <span className="text-xs text-zinc-700">
+                    <span style={{ fontSize: '11px', color: '#666' }}>
                       ({v.initialValue})
                     </span>
                   )}
@@ -413,13 +485,19 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Status bar */}
-      <div className="h-6 bg-zinc-900 border-t border-zinc-800 px-4 flex items-center justify-between flex-shrink-0">
-        <span className="text-xs text-zinc-600">
-          {nodes.length} nodes • {edges.length} edges
-        </span>
-        <span className="text-xs text-zinc-700">
-          {selectedNodeId ? `ID: ${selectedNodeId}` : 'Ready'}
-        </span>
+      <div style={{
+        height: '24px',
+        backgroundColor: '#1a1a1a',
+        borderTop: '1px solid #0a0a0a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 12px',
+        fontSize: '11px',
+        color: '#666'
+      }}>
+        <span>{nodes.length} nodes • {edges.length} edges</span>
+        <span>{selectedNodeId ? `ID: ${selectedNodeId}` : 'Ready'}</span>
       </div>
     </div>
   );
