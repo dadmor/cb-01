@@ -1,6 +1,6 @@
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
-import { SceneNodeData } from "@/types";
+import { SceneNodeData } from "../types";
 import { useGameMode } from "@/modules/game";
 import { cn } from "@/lib/utils";
 import { Lock, Clock } from "lucide-react";

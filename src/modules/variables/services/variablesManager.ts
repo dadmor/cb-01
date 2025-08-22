@@ -1,5 +1,5 @@
 // src/modules/variables/services/variablesManager.ts
-import { Variable, Condition } from "@/types";
+import { Variable, Condition } from "../types";
 
 export class VariablesManager {
   static evaluate(variables: Variable[], condition?: Condition): boolean {

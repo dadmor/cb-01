@@ -1,11 +1,10 @@
 import React, { useMemo } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { ChoiceNodeData } from "@/types";
 import { useGameMode } from "@/modules/game";
 import { useVariables, VariablesManager } from "@/modules/variables";
 import { useFlowStore } from "@/modules/flow/store";
 import { cn } from "@/lib/utils";
-import { isSceneNode } from "@/types";
+import { ChoiceNodeData, isSceneNode } from "../types";
 
 interface ChoiceNodeProps {
   data: ChoiceNodeData;

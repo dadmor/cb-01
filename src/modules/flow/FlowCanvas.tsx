@@ -18,13 +18,7 @@ import { ChoiceNode } from "./nodes/ChoiceNode";
 import { useFlowStore, useNodes, useEdges, useSelectedNodeId } from "./store";
 import { useGameMode, useCurrentNodeId, useIsGameOver, setGameState } from "@/modules/game";
 import { useVariables, useVariablesStore, VariablesManager } from "@/modules/variables";
-import {
-  ChoiceNode as ChoiceNodeType,
-  SceneNode as SceneNodeType,
-  StoryNode,
-  isSceneNode,
-  isChoiceNode,
-} from "@/types";
+import { StoryNode, SceneNode as SceneNodeType, ChoiceNode as ChoiceNodeType, isSceneNode, isChoiceNode } from "./types";
 
 // Define node types
 const nodeTypes: NodeTypes = {

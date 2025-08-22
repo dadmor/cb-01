@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useVariablesStore } from '../stores/variablesStore';
 import { VariablesManager } from '../services/variablesManager';
-import { Condition } from '@/types';
+import { Condition } from '../types';
 
 export const useConditionEvaluator = () => {
   const variables = useVariablesStore(s => s.variables);

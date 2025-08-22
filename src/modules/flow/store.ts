@@ -8,18 +8,11 @@ import {
   NodeChange,
   EdgeChange,
 } from "@xyflow/react";
-import {
-  StoryNode,
-  StoryEdge,
-  SceneNode,
-  ChoiceNode,
-  SceneNodeData,
-  ChoiceNodeData,
-  isSceneNode,
-  isChoiceNode,
-} from "@/types";
+
 import { blockSnippets } from "./blockSnippets";
 import { snapPositionToGrid } from "./gridHelpers";
+import { StoryNode } from ".";
+import { ChoiceNode, ChoiceNodeData, SceneNode, SceneNodeData, StoryEdge } from "./types";
 
 // Type-safe wrappers
 const applyNodeChanges = (

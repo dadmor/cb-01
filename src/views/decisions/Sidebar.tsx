@@ -2,10 +2,11 @@ import React, { useMemo } from "react";
 import { useGameMode, useIsGameOver, useCurrentNodeId, GameService } from "@/modules/game";
 import { useVariables, useVariablesStore, VariablesManager } from "@/modules/variables";
 import { useFlowStore, START_NODE_ID } from "@/modules/flow/store";
+import { isSceneNode, isChoiceNode } from "@/modules/flow/types";
+import { isConditionOperator } from "@/modules/variables/types";
 import { useVideoStore } from "@/modules/video/store";
 import { blockSnippets } from "@/modules/flow/blockSnippets";
 import { Play, Square, RotateCcw, Plus, X } from 'lucide-react';
-import { isConditionOperator, isSceneNode, isChoiceNode } from "@/types";
 
 export const Sidebar: React.FC = () => {
   const mode = useGameMode();

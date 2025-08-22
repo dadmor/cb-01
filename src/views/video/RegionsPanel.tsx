@@ -1,11 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, {  useState } from 'react';
 import { useVideoStore } from '@/modules/video/store';
 import { useFlowStore } from '@/modules/flow/store';
-import { isSceneNode } from '@/types';
+import { isSceneNode } from '@/modules/flow';
+
 
 export const RegionsPanel: React.FC = () => {
   const videoFile = useVideoStore(state => state.videoFile);
-  const videoUrl = useVideoStore(state => state.videoUrl);
   const segments = useVideoStore(state => state.segments);
   const selectedSegmentId = useVideoStore(state => state.selectedSegmentId);
   const selectSegment = useVideoStore(state => state.selectSegment);
