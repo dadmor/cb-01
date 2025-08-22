@@ -33,8 +33,7 @@ export type SceneNode = Node<SceneNodeData, "scene">;
 export type ChoiceNode = Node<ChoiceNodeData, "choice">;
 export type StoryNode = SceneNode | ChoiceNode;
 
-// ============= EDGE TYPE =============
-export type StoryEdge = Edge;
+
 
 // ============= TYPE GUARDS =============
 // WAŻNE: Type guardy MUSZĄ być w tym samym pliku co typy

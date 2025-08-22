@@ -7,6 +7,7 @@ import {
   applyEdgeChanges as applyEdgeChangesRF,
   NodeChange,
   EdgeChange,
+  Edge,
 } from "@xyflow/react";
 
 // WAŻNE: Importujemy WSZYSTKO z types.ts, łącznie z type guards
@@ -14,7 +15,6 @@ import {
   StoryNode, 
   SceneNode, 
   ChoiceNode, 
-  StoryEdge,
   SceneNodeData,
   ChoiceNodeData,
   isSceneNode,
@@ -34,14 +34,14 @@ const applyNodeChanges = (
 
 const applyEdgeChanges = (
   changes: EdgeChange[],
-  edges: StoryEdge[]
-): StoryEdge[] => {
+  edges: Edge[]
+): Edge[] => {
   return applyEdgeChangesRF(changes, edges);
 };
 
 interface FlowStore {
   nodes: StoryNode[];
-  edges: StoryEdge[];
+  edges: Edge[];
   selectedNodeId: string | null;
 
   // Node operations
@@ -64,12 +64,12 @@ interface FlowStore {
   onEdgesChange: (changes: EdgeChange[]) => void;
 
   // Project operations
-  loadProject: (nodes: StoryNode[], edges: StoryEdge[]) => void;
+  loadProject: (nodes: StoryNode[], edges: Edge[]) => void;
   clearProject: () => void;
 
   // Optimized selectors
   getNode: (nodeId: string) => StoryNode | undefined;
-  getConnectedEdges: (nodeId: string) => StoryEdge[];
+  getConnectedEdges: (nodeId: string) => Edge[];
   getChoicesForScene: (sceneId: string) => ChoiceNode[];
 }
 
