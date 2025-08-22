@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Handle, Position } from "reactflow";
 import { ChoiceNodeData } from "@/types";
 import { useGameStore } from "@/modules/game/store";
+import { useFlowStore } from "@/modules/flow/store";
+import { cn } from "@/lib/utils";
+import { isSceneNode } from "@/types";
+import { VariablesManager } from "@/modules/variables";
 
 interface ChoiceNodeProps {
   data: ChoiceNodeData;
@@ -11,71 +15,60 @@ interface ChoiceNodeProps {
 export const ChoiceNode: React.FC<ChoiceNodeProps> = ({ data, selected }) => {
   const { label, effects, isAvailable, onClick } = data;
   const variables = useGameStore(state => state.variables);
+  const mode = useGameStore(state => state.mode);
+  const edges = useFlowStore(state => state.edges);
+  const nodes = useFlowStore(state => state.nodes);
+  
   const canClick = isAvailable && onClick;
+  
+  // Check if this choice leads to a locked node
+  const leadsToLockedNode = useMemo(() => {
+    if (mode !== "play") return false;
+    
+    const outgoingEdge = edges.find(e => e.source === data.id);
+    if (!outgoingEdge) return false;
+    
+    const targetNode = nodes.find(n => n.id === outgoingEdge.target);
+    if (!targetNode || !isSceneNode(targetNode)) return false;
+    
+    return !VariablesManager.evaluate(variables, targetNode.data.condition);
+  }, [mode, edges, nodes, data.id, variables]);
   
   const effectEntries = Object.entries(effects).filter(([_, value]) => value !== 0);
   const hasEffects = effectEntries.length > 0;
   
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative group">
       <div 
-        style={{
-          position: 'relative',
-          padding: '8px 20px',
-          backgroundColor: canClick ? '#2a2a2a' : isAvailable ? '#1a1a1a' : '#0f0f0f',
-          border: `2px solid ${
-            selected ? '#E84E36' :
-            canClick ? '#3a3a3a' : 
-            '#2a2a2a'
-          }`,
-          color: canClick ? '#ccc' : isAvailable ? '#666' : '#444',
-          fontSize: '12px',
-          fontWeight: 500,
-          cursor: canClick ? 'pointer' : isAvailable ? 'default' : 'not-allowed',
-          transition: 'all 0.15s ease',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          minHeight: '32px'
-        }}
-        onClick={canClick ? onClick : undefined}
-        onMouseEnter={(e) => {
-          if (canClick) {
-            e.currentTarget.style.backgroundColor = '#333';
-            e.currentTarget.style.borderColor = '#E84E36';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (canClick) {
-            e.currentTarget.style.backgroundColor = '#2a2a2a';
-            e.currentTarget.style.borderColor = selected ? '#E84E36' : '#3a3a3a';
-          }
-        }}
+        className={cn(
+          "relative px-5 py-2 border-2 text-xs font-medium transition-all duration-150 ease-in-out",
+          "inline-flex items-center gap-2 min-h-[32px]",
+          canClick && !leadsToLockedNode && "bg-zinc-800 border-zinc-700 text-zinc-300 cursor-pointer hover:bg-zinc-700 hover:border-red-600",
+          canClick && leadsToLockedNode && "bg-zinc-900 border-zinc-800 text-zinc-600 cursor-not-allowed opacity-75",
+          isAvailable && !canClick && "bg-zinc-900 text-zinc-600 cursor-default",
+          !isAvailable && "bg-zinc-950 border-zinc-800 text-zinc-700 cursor-not-allowed",
+          selected && "border-red-600"
+        )}
+        onClick={canClick && !leadsToLockedNode ? onClick : undefined}
       >
         <span>{label}</span>
         
+        {leadsToLockedNode && (
+          <svg className="w-3 h-3 fill-zinc-600" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
+          </svg>
+        )}
+        
         {hasEffects && (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '4px',
-            marginLeft: '4px'
-          }}>
+          <div className="flex items-center gap-1 ml-1">
             {effectEntries.map(([varName, value]) => (
               <div
                 key={varName}
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  backgroundColor: '#0f0f0f',
-                  border: '1px solid #2a2a2a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '9px',
-                  fontWeight: 'bold',
-                  color: value > 0 ? '#4ade80' : '#ef4444'
-                }}
+                className={cn(
+                  "w-4 h-4 bg-zinc-950 border border-zinc-800",
+                  "flex items-center justify-center text-[9px] font-bold",
+                  value > 0 ? "text-green-400" : "text-red-400"
+                )}
                 title={`${varName}: ${value > 0 ? '+' : ''}${value}`}
               >
                 {value > 0 ? '↑' : '↓'}
@@ -84,13 +77,10 @@ export const ChoiceNode: React.FC<ChoiceNodeProps> = ({ data, selected }) => {
           </div>
         )}
         
-        {canClick && (
+        {canClick && !leadsToLockedNode && (
           <svg 
-            width="10" 
-            height="10" 
-            fill="currentColor" 
+            className="w-2.5 h-2.5 fill-current opacity-40"
             viewBox="0 0 20 20"
-            style={{ opacity: 0.4 }}
           >
             <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd"/>
           </svg>
@@ -98,94 +88,61 @@ export const ChoiceNode: React.FC<ChoiceNodeProps> = ({ data, selected }) => {
         
         <Handle 
           type="target" 
-          position={Position.Left} 
-          style={{
-            width: '8px',
-            height: '16px',
-            backgroundColor: '#2a2a2a',
-            border: '1px solid #3a3a3a',
-            borderRadius: 0,
-            left: '-5px'
-          }}
+          position={Position.Left}
+          className="!w-2 !h-4 !bg-zinc-800 !border !border-zinc-700 !rounded-none !left-[-5px]" 
         />
         
         <Handle 
           type="source" 
-          position={Position.Right} 
-          style={{
-            width: '8px',
-            height: '16px',
-            backgroundColor: '#2a2a2a',
-            border: '1px solid #3a3a3a',
-            borderRadius: 0,
-            right: '-5px'
-          }}
+          position={Position.Right}
+          className="!w-2 !h-4 !bg-zinc-800 !border !border-zinc-700 !rounded-none !right-[-5px]" 
         />
       </div>
       
       {/* Effects tooltip on hover */}
-      {hasEffects && (
-        <div style={{
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          bottom: '-60px',
-          opacity: 0,
-          pointerEvents: 'none',
-          transition: 'opacity 0.2s ease',
-          zIndex: 10
-        }}
-        className="effects-tooltip"
-        >
-          <div style={{
-            backgroundColor: '#0f0f0f',
-            border: '1px solid #2a2a2a',
-            padding: '6px 10px',
-            fontSize: '10px',
-            whiteSpace: 'nowrap'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      {hasEffects && !leadsToLockedNode && (
+        <div className={cn(
+          "absolute left-1/2 -translate-x-1/2 -bottom-[60px] z-10",
+          "opacity-0 pointer-events-none transition-opacity duration-200",
+          "group-hover:opacity-100"
+        )}>
+          <div className="bg-zinc-950 border border-zinc-800 px-2.5 py-1.5 text-[10px] whitespace-nowrap">
+            <div className="flex flex-col gap-0.5">
               {effectEntries.map(([varName, value]) => {
                 const variable = variables.find(v => v.name === varName);
                 if (!variable) return null;
                 
                 return (
-                  <div key={varName} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#666' }}>{varName}:</span>
-                    <span style={{
-                      fontFamily: 'monospace',
-                      fontWeight: 500,
-                      color: value > 0 ? '#4ade80' : '#ef4444'
-                    }}>
+                  <div key={varName} className="flex items-center gap-2">
+                    <span className="text-zinc-600">{varName}:</span>
+                    <span className={cn(
+                      "font-mono font-medium",
+                      value > 0 ? "text-green-400" : "text-red-400"
+                    )}>
                       {value > 0 ? '+' : ''}{value}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div style={{
-              position: 'absolute',
-              top: '-3px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 0,
-              height: 0,
-              borderLeft: '4px solid transparent',
-              borderRight: '4px solid transparent',
-              borderBottom: '4px solid #2a2a2a'
-            }} />
+            <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-l-transparent border-r-transparent border-b-zinc-800" />
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        .effects-tooltip:hover {
-          opacity: 1 !important;
-        }
-        div:hover .effects-tooltip {
-          opacity: 1;
-        }
-      `}</style>
+      
+      {/* Locked path tooltip */}
+      {leadsToLockedNode && (
+        <div className={cn(
+          "absolute left-1/2 -translate-x-1/2 -bottom-[40px] z-10",
+          "opacity-0 pointer-events-none transition-opacity duration-200",
+          "group-hover:opacity-100"
+        )}>
+          <div className="bg-zinc-950 border border-zinc-800 px-2.5 py-1.5 text-[10px] whitespace-nowrap">
+            <span className="text-zinc-500">This path is locked</span>
+            <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-l-transparent border-r-transparent border-b-zinc-800" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

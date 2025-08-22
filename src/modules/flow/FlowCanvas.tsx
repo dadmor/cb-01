@@ -43,6 +43,34 @@ const defaultEdgeOptions = {
   }
 };
 
+// Custom edge style for locked paths
+const getEdgeStyle = (edge: Edge, nodes: StoryNode[], variables: any, mode: "edit" | "play") => {
+  const targetNode = nodes.find(n => n.id === edge.target);
+  
+  if (targetNode && isSceneNode(targetNode) && targetNode.data.condition) {
+    const isLocked = mode === "play" ? !VariablesManager.evaluate(variables, targetNode.data.condition) : false;
+    
+    if (mode === "edit" || isLocked) {
+      return {
+        ...defaultEdgeOptions,
+        style: {
+          strokeWidth: 2,
+          stroke: mode === "edit" ? '#ea580c' : '#3f3f46', // orange in edit, gray in play
+          strokeDasharray: '5 5',
+          opacity: mode === "edit" ? 0.7 : 0.5
+        },
+        animated: false,
+        markerEnd: {
+          type: 'arrow' as const,
+          color: mode === "edit" ? '#ea580c' : '#3f3f46'
+        }
+      };
+    }
+  }
+  
+  return defaultEdgeOptions;
+};
+
 export const FlowCanvas: React.FC = React.memo(() => {
   // Use optimized selectors
   const nodes = useNodes();
@@ -105,21 +133,20 @@ export const FlowCanvas: React.FC = React.memo(() => {
     [mode, isGameOver, nodes, edges, variables, updateVariables, setCurrentNode]
   );
 
-  // Optimized node enrichment - only compute for visible/relevant nodes
+  // Optimized node enrichment - shows conditions in both edit and play modes
   const enrichedNodes = useMemo((): StoryNode[] => {
-    // In edit mode, return nodes as-is
-    if (mode === "edit") return nodes;
-
-    // In play mode, only enrich current node and its choices
     return nodes.map((node): StoryNode => {
       if (isSceneNode(node)) {
         const isCurrent = node.id === currentNodeId;
         
-        // Only evaluate condition for current or adjacent nodes
-        const isUnlocked = isCurrent || 
-          edges.some(e => e.source === currentNodeId && e.target === node.id) ?
-          VariablesManager.evaluate(variables, node.data.condition) : 
-          true;
+        // In edit mode, show condition status visually
+        // In play mode, evaluate the condition
+        const isUnlocked = mode === "edit" 
+          ? !node.data.condition // In edit mode, unlocked means no condition
+          : VariablesManager.evaluate(variables, node.data.condition);
+
+        // Always pass condition info for visual display
+        const hasCondition = !!node.data.condition;
 
         return {
           ...node,
@@ -127,13 +154,14 @@ export const FlowCanvas: React.FC = React.memo(() => {
             ...node.data,
             isUnlocked,
             isCurrent,
+            hasCondition, // Add this for edit mode display
           },
         };
       }
 
       if (isChoiceNode(node)) {
         const incomingEdge = edges.find((e) => e.target === node.id);
-        const isAvailable = incomingEdge?.source === currentNodeId;
+        const isAvailable = mode === "play" && incomingEdge?.source === currentNodeId;
 
         return {
           ...node,
@@ -148,6 +176,14 @@ export const FlowCanvas: React.FC = React.memo(() => {
       return node;
     });
   }, [nodes, edges, mode, currentNodeId, variables, handleChoiceClick]);
+
+  // Enrich edges with locked state styling
+  const enrichedEdges = useMemo(() => {
+    return edges.map(edge => ({
+      ...edge,
+      ...getEdgeStyle(edge, nodes, variables, mode)
+    }));
+  }, [edges, nodes, variables, mode]);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -308,7 +344,7 @@ export const FlowCanvas: React.FC = React.memo(() => {
   return (
     <ReactFlow
       nodes={enrichedNodes}
-      edges={edges}
+      edges={enrichedEdges}
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
