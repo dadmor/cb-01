@@ -28,57 +28,68 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ data, selected }) => {
 
   return (
     <div 
-      className={`
-        relative w-72 min-h-32 rounded-xl shadow-lg transition-all duration-200
-        ${isCurrent 
-          ? "ring-2 ring-zinc-700 ring-offset-2 ring-offset-black" 
-          : selected 
-          ? "ring-2 ring-zinc-800 ring-offset-2 ring-offset-black" 
-          : ""
-        }
-        ${!isUnlocked ? "opacity-50" : ""}
-      `}
+      style={{
+        position: 'relative',
+        width: '240px',
+        minHeight: '80px',
+        backgroundColor: isCurrent ? '#2a2a2a' : '#1a1a1a',
+        border: `2px solid ${
+          isCurrent ? '#E84E36' : 
+          selected ? '#E84E36' : 
+          '#2a2a2a'
+        }`,
+        opacity: isUnlocked ? 1 : 0.5,
+        transition: 'all 0.15s ease'
+      }}
     >
-      <div className={`
-        absolute inset-0 rounded-xl
-        ${isCurrent 
-          ? "bg-zinc-800" 
-          : isUnlocked 
-          ? "bg-zinc-900" 
-          : "bg-black"
-        }
-      `} />
-      
-      <div className="relative p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <h3 className={`
-              font-semibold text-base leading-tight
-              ${isCurrent ? "text-zinc-100" : "text-zinc-300"}
-            `}>
+      <div style={{ padding: '12px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ flex: 1 }}>
+            <h3 style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: isCurrent ? '#fff' : '#ccc',
+              margin: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
               {label}
               {!isUnlocked && " 🔒"}
             </h3>
             
             {videoSegment && (
-              <div className="flex items-center gap-1 mt-1">
-                <svg className="w-3 h-3 text-zinc-600" fill="currentColor" viewBox="0 0 20 20">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                <svg width="10" height="10" fill="#666" viewBox="0 0 20 20">
                   <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
                 </svg>
-                <span className="text-xs text-zinc-600">
-                {(videoSegment as any).label || `Segment ${segments.indexOf(videoSegment) + 1}`}
+                <span style={{ fontSize: '10px', color: '#666' }}>
+                  {videoSegment.label || `Region ${segments.indexOf(videoSegment) + 1}`}
                 </span>
               </div>
             )}
           </div>
           
-          <div className="flex items-center gap-1">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             {isCurrent && (
-              <div className="w-2 h-2 bg-zinc-500 rounded-full" />
+              <div style={{ 
+                width: '6px', 
+                height: '6px', 
+                backgroundColor: '#E84E36', 
+                borderRadius: '50%',
+                animation: 'pulse 2s infinite'
+              }} />
             )}
             
             {remainingMs !== undefined && remainingMs > 0 && (
-              <span className="text-xs bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-400 font-mono">
+              <span style={{
+                fontSize: '10px',
+                backgroundColor: '#0f0f0f',
+                padding: '2px 6px',
+                color: '#E84E36',
+                fontFamily: 'monospace'
+              }}>
                 {Math.ceil(remainingMs / 1000)}s
               </span>
             )}
@@ -86,61 +97,113 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ data, selected }) => {
         </div>
         
         {description && (
-          <p className={`
-            text-xs leading-relaxed line-clamp-2 mb-2
-            ${isCurrent ? "text-zinc-400" : "text-zinc-500"}
-          `}>
+          <p style={{
+            fontSize: '11px',
+            lineHeight: '1.4',
+            color: '#666',
+            margin: '0 0 8px 0',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
+          }}>
             {description}
           </p>
         )}
         
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-zinc-600">
-              Duration
-            </span>
-            <span className="font-mono text-zinc-500">
+        {/* Duration bar */}
+        <div style={{ marginTop: '8px' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            marginBottom: '4px'
+          }}>
+            <span style={{ fontSize: '10px', color: '#666' }}>Duration</span>
+            <span style={{ fontSize: '10px', color: '#999', fontFamily: 'monospace' }}>
               {durationSec}s
             </span>
           </div>
           
-          {isCurrent && remainingMs !== undefined ? (
-            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+          <div style={{ 
+            height: '2px', 
+            backgroundColor: '#0f0f0f',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {isCurrent && (
               <div 
-                className="h-full bg-zinc-600 transition-all duration-100"
-                style={{ width: `${progress}%` }}
+                style={{ 
+                  height: '100%',
+                  backgroundColor: '#E84E36',
+                  width: `${progress}%`,
+                  transition: 'width 0.1s linear'
+                }}
               />
-            </div>
-          ) : (
-            <div className="h-1 bg-zinc-800 rounded-full" />
-          )}
+            )}
+          </div>
         </div>
       </div>
       
       <Handle 
         type="target" 
         position={Position.Left} 
-        className="w-3 h-3 border-2 bg-zinc-800 border-zinc-700"
-        style={{ left: '-6px' }}
+        style={{
+          width: '8px',
+          height: '16px',
+          backgroundColor: '#2a2a2a',
+          border: '1px solid #3a3a3a',
+          borderRadius: 0,
+          left: '-5px'
+        }}
       />
       
       <Handle 
         type="source" 
         position={Position.Right} 
-        className="w-3 h-3 border-2 bg-zinc-800 border-zinc-700"
-        style={{ right: '-6px' }}
+        style={{
+          width: '8px',
+          height: '16px',
+          backgroundColor: '#2a2a2a',
+          border: '1px solid #3a3a3a',
+          borderRadius: 0,
+          right: '-5px'
+        }}
       />
       
       {!isUnlocked && (
-        <div className="absolute inset-0 rounded-xl bg-black/50 flex items-center justify-center">
-          <div className="bg-zinc-900 rounded-lg px-3 py-2 flex items-center gap-2">
-            <svg className="w-4 h-4 text-zinc-600" fill="currentColor" viewBox="0 0 20 20">
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #2a2a2a',
+            padding: '6px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            <svg width="12" height="12" fill="#666" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
             </svg>
-            <span className="text-xs text-zinc-600 font-medium">Locked</span>
+            <span style={{ fontSize: '11px', color: '#666', fontWeight: 500 }}>Locked</span>
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 };

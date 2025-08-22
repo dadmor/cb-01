@@ -1,3 +1,4 @@
+// src/modules/flow/FlowCanvas.tsx
 import React, { useCallback, useMemo, useRef, useEffect } from "react";
 import ReactFlow, {
   MiniMap,
@@ -14,7 +15,7 @@ import "reactflow/dist/style.css";
 
 import { SceneNode } from "./nodes/SceneNode";
 import { ChoiceNode } from "./nodes/ChoiceNode";
-import { useFlowStore } from "./store";
+import { useFlowStore, useNodes, useEdges } from "./store";
 import { useGameStore } from "@/modules/game/store";
 import { useVideoStore } from "@/modules/video/store";
 import { VariablesManager } from "@/modules/variables";
@@ -26,42 +27,54 @@ import {
   isChoiceNode
 } from "@/types";
 
-// Properly typed nodeTypes
+// Memoized node types - prevent recreation on every render
 const nodeTypes: NodeTypes = {
   scene: SceneNode,
   choice: ChoiceNode,
 } as const;
 
-export const FlowCanvas: React.FC = () => {
-  const nodes = useFlowStore((state) => state.nodes);
-  const edges = useFlowStore((state) => state.edges);
-  const onNodesChange = useFlowStore((state) => state.onNodesChange);
-  const onEdgesChange = useFlowStore((state) => state.onEdgesChange);
-  const createChoice = useFlowStore((state) => state.createChoice);
-  const selectNode = useFlowStore((state) => state.selectNode);
+// Memoized edge options
+const defaultEdgeOptions = {
+  type: "smoothstep",
+  markerEnd: 'arrow',
+  style: {
+    strokeWidth: 2,
+    stroke: '#6b7280',
+  }
+};
 
-  const mode = useGameStore((state) => state.mode);
-  const currentNodeId = useGameStore((state) => state.currentNodeId);
-  const isGameOver = useGameStore((state) => state.isGameOver);
-  const variables = useGameStore((state) => state.variables);
-  const setCurrentNode = useGameStore((state) => state.setCurrentNode);
-  const updateVariables = useGameStore((state) => state.updateVariables);
-  const setGameOver = useGameStore((state) => state.setGameOver);
+export const FlowCanvas: React.FC = React.memo(() => {
+  // Use optimized selectors
+  const nodes = useNodes();
+  const edges = useEdges();
+  const onNodesChange = useFlowStore(state => state.onNodesChange);
+  const onEdgesChange = useFlowStore(state => state.onEdgesChange);
+  const createChoice = useFlowStore(state => state.createChoice);
+  const selectNode = useFlowStore(state => state.selectNode);
+  const getChoicesForScene = useFlowStore(state => state.getChoicesForScene);
 
-  const videoUrl = useVideoStore((state) => state.videoUrl);
+  // Game state with specific selectors
+  const mode = useGameStore(state => state.mode);
+  const currentNodeId = useGameStore(state => state.currentNodeId);
+  const isGameOver = useGameStore(state => state.isGameOver);
+  const variables = useGameStore(state => state.variables);
+  const setCurrentNode = useGameStore(state => state.setCurrentNode);
+  const updateVariables = useGameStore(state => state.updateVariables);
+  const setGameOver = useGameStore(state => state.setGameOver);
+
+  const videoUrl = useVideoStore(state => state.videoUrl);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Get current node with proper typing
+  // Memoize current node lookup
   const currentNode = useMemo(
-    (): SceneNodeType | ChoiceNodeType | undefined => 
-      nodes.find((n): n is SceneNodeType | ChoiceNodeType => n.id === currentNodeId),
+    () => nodes.find((n): n is SceneNodeType | ChoiceNodeType => n.id === currentNodeId),
     [nodes, currentNodeId]
   );
 
-  // Handle choice click with proper typing
+  // Memoized choice click handler
   const handleChoiceClick = useCallback(
     (choiceNodeId: string) => {
       if (mode !== "play" || isGameOver) return;
@@ -79,7 +92,6 @@ export const FlowCanvas: React.FC = () => {
       );
       if (!targetNode) return;
 
-      // Apply effects and check if target is unlocked
       const newVariables = VariablesManager.applyEffects(
         variables,
         choiceNode.data.effects
@@ -93,15 +105,21 @@ export const FlowCanvas: React.FC = () => {
     [mode, isGameOver, nodes, edges, variables, updateVariables, setCurrentNode]
   );
 
-  // Enrich nodes with runtime state - properly typed
+  // Optimized node enrichment - only compute for visible/relevant nodes
   const enrichedNodes = useMemo((): StoryNode[] => {
+    // In edit mode, return nodes as-is
+    if (mode === "edit") return nodes;
+
+    // In play mode, only enrich current node and its choices
     return nodes.map((node): StoryNode => {
       if (isSceneNode(node)) {
-        const isUnlocked = VariablesManager.evaluate(
-          variables,
-          node.data.condition
-        );
-        const isCurrent = mode === "play" && node.id === currentNodeId;
+        const isCurrent = node.id === currentNodeId;
+        
+        // Only evaluate condition for current or adjacent nodes
+        const isUnlocked = isCurrent || 
+          edges.some(e => e.source === currentNodeId && e.target === node.id) ?
+          VariablesManager.evaluate(variables, node.data.condition) : 
+          true;
 
         return {
           ...node,
@@ -109,23 +127,20 @@ export const FlowCanvas: React.FC = () => {
             ...node.data,
             isUnlocked,
             isCurrent,
-            remainingMs: undefined, // Will be set by timer effect
           },
         };
       }
 
       if (isChoiceNode(node)) {
-        // Check if this choice is available (source is current)
         const incomingEdge = edges.find((e) => e.target === node.id);
-        const isAvailable =
-          mode === "play" && incomingEdge?.source === currentNodeId;
+        const isAvailable = incomingEdge?.source === currentNodeId;
 
         return {
           ...node,
           data: {
             ...node.data,
             isAvailable,
-            onClick: () => handleChoiceClick(node.id),
+            onClick: isAvailable ? () => handleChoiceClick(node.id) : undefined,
           },
         };
       }
@@ -134,24 +149,25 @@ export const FlowCanvas: React.FC = () => {
     });
   }, [nodes, edges, mode, currentNodeId, variables, handleChoiceClick]);
 
-  // Timer and video playback effect with proper typing
-  useEffect(() => {
-    const cleanup = () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.remove();
-        videoRef.current = null;
-      }
-    };
+  // Cleanup function
+  const cleanup = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.remove();
+      videoRef.current = null;
+    }
+  }, []);
 
+  // Timer effect - only when needed
+  useEffect(() => {
     cleanup();
 
     if (
@@ -169,10 +185,8 @@ export const FlowCanvas: React.FC = () => {
       defaultChoiceId,
     } = currentNode.data;
     
-    const outgoingChoices = edges
-      .filter((e) => e.source === currentNode.id)
-      .map((e) => nodes.find((n) => n.id === e.target))
-      .filter((n): n is ChoiceNodeType => !!n && isChoiceNode(n));
+    // Use optimized selector instead of filtering
+    const outgoingChoices = getChoicesForScene(currentNode.id);
 
     const handleTimeout = () => {
       if (defaultChoiceId) {
@@ -210,7 +224,6 @@ export const FlowCanvas: React.FC = () => {
           const elapsed = Date.now() - startTime;
           const remaining = Math.max(0, videoDuration - elapsed);
 
-          // Update node with remaining time
           useFlowStore.getState().updateNode(currentNode.id, {
             ...currentNode.data,
             remainingMs: remaining,
@@ -243,13 +256,13 @@ export const FlowCanvas: React.FC = () => {
 
       timeoutRef.current = setTimeout(handleTimeout, totalMs);
     } else {
-      // Immediate transition
       setTimeout(handleTimeout, 100);
     }
 
     return cleanup;
-  }, [mode, isGameOver, currentNode, videoUrl, handleChoiceClick, setGameOver]);
+  }, [mode, isGameOver, currentNode, videoUrl, handleChoiceClick, setGameOver, cleanup, getChoicesForScene]);
 
+  // Memoized callbacks
   const onConnect: OnConnect = useCallback(
     (params) => {
       if (params.source && params.target) {
@@ -276,33 +289,21 @@ export const FlowCanvas: React.FC = () => {
     }
   }, [mode, selectNode]);
 
-  // Handle keyboard delete
-  const deleteKeyCode = useCallback((event: KeyboardEvent) => {
-    const deleteNode = useFlowStore.getState().deleteNode;
-    const selectedNodeId = useFlowStore.getState().selectedNodeId;
-    
-    if (mode === "edit" && selectedNodeId && (event.key === "Delete" || event.key === "Backspace")) {
-      event.preventDefault();
-      deleteNode(selectedNodeId);
-    }
-  }, [mode]);
-
+  // Keyboard handler
   useEffect(() => {
-    document.addEventListener("keydown", deleteKeyCode);
-    return () => {
-      document.removeEventListener("keydown", deleteKeyCode);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (mode === "edit" && (event.key === "Delete" || event.key === "Backspace")) {
+        const selectedNodeId = useFlowStore.getState().selectedNodeId;
+        if (selectedNodeId) {
+          event.preventDefault();
+          useFlowStore.getState().deleteNode(selectedNodeId);
+        }
+      }
     };
-  }, [deleteKeyCode]);
 
-  // Memoize default edge options
-  const defaultEdgeOptions = useMemo(() => ({
-    type: "smoothstep",
-    markerEnd: 'arrow',
-    style: {
-      strokeWidth: 2,
-      stroke: '#6b7280',
-    }
-  }), []);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mode]);
 
   return (
     <ReactFlow
@@ -316,14 +317,14 @@ export const FlowCanvas: React.FC = () => {
       onPaneClick={onPaneClick}
       connectionLineType={ConnectionLineType.SmoothStep}
       defaultEdgeOptions={defaultEdgeOptions}
-      deleteKeyCode={null} // Disable default delete behavior
+      deleteKeyCode={null}
       snapToGrid={true}
       snapGrid={[10, 10]}
       fitView
     >
       <Controls />
       <MiniMap />
-      <Background  gap={10} size={1} />
+      <Background gap={10} size={1} />
     </ReactFlow>
   );
-};
+});
