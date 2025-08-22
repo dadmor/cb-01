@@ -2,7 +2,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { subscribeWithSelector } from "zustand/middleware";
-import { shallow } from "zustand/shallow";
 import {
   applyNodeChanges as applyNodeChangesRF,
   applyEdgeChanges as applyEdgeChangesRF,
@@ -316,8 +315,8 @@ export const useFlowStore = create<FlowStore>()(
 );
 
 // Optimized hooks to prevent re-renders
-export const useNodes = () => useFlowStore((state) => state.nodes, shallow);
-export const useEdges = () => useFlowStore((state) => state.edges, shallow);
+export const useNodes = () => useFlowStore((state) => state.nodes);
+export const useEdges = () => useFlowStore((state) => state.edges);
 export const useSelectedNodeId = () =>
   useFlowStore((state) => state.selectedNodeId);
 export const useSelectedNode = () => {

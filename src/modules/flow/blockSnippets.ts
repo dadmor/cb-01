@@ -33,13 +33,13 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: choiceId,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 200, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 288, y: position.y + 96 }),
             data: { label: "Continue", effects: {} }
           },
           {
             id: sceneId,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 400, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 576, y: position.y }),
             data: { 
               label: "New Scene", 
               durationSec: 5 
@@ -70,25 +70,25 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: choiceId1,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 200, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 288, y: position.y + 96 }),
             data: { label: "To Scene A", effects: {} }
           },
           {
             id: sceneId1,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 400, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 576, y: position.y }),
             data: { label: "Scene A", durationSec: 5 }
           },
           {
             id: choiceId2,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 600, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 864, y: position.y + 96 }),
             data: { label: "Continue", effects: {} }
           },
           {
             id: sceneId2,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 800, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 1152, y: position.y }),
             data: { label: "Scene B", durationSec: 5 }
           }
         ],
@@ -118,25 +118,25 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: choiceId1,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 250, y: position.y - 50 }),
+            position: snapPositionToGrid({ x: position.x + 312, y: position.y - 72 }),
             data: { label: "Option A", effects: {} }
           },
           {
             id: choiceId2,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 250, y: position.y + 50 }),
+            position: snapPositionToGrid({ x: position.x + 312, y: position.y + 264 }),
             data: { label: "Option B", effects: {} }
           },
           {
             id: sceneId1,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 450, y: position.y - 50 }),
+            position: snapPositionToGrid({ x: position.x + 600, y: position.y - 168 }),
             data: { label: "Result A", durationSec: 5 }
           },
           {
             id: sceneId2,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 450, y: position.y + 50 }),
+            position: snapPositionToGrid({ x: position.x + 600, y: position.y + 168 }),
             data: { label: "Result B", durationSec: 5 }
           }
         ],
@@ -163,19 +163,19 @@ export const blockSnippets: BlockSnippet[] = [
       for (let i = 0; i < 3; i++) {
         const choiceId = generateId("choice");
         const sceneId = generateId("scene");
-        const yOffset = (i - 1) * 80; // -80, 0, 80
+        const yOffset = (i - 1) * 192; // -192, 0, 192 (8 grid units)
         
         choices.push({
           id: choiceId,
           type: "choice" as const,
-          position: snapPositionToGrid({ x: position.x + 250, y: position.y + yOffset }),
+          position: snapPositionToGrid({ x: position.x + 312, y: position.y + 96 + yOffset }),
           data: { label: `Option ${i + 1}`, effects: {} }
         });
         
         scenes.push({
           id: sceneId,
           type: "scene" as const,
-          position: snapPositionToGrid({ x: position.x + 450, y: position.y + yOffset }),
+          position: snapPositionToGrid({ x: position.x + 600, y: position.y + yOffset }),
           data: { label: `Result ${i + 1}`, durationSec: 5 }
         });
         
@@ -207,13 +207,13 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: choiceId1,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 200, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 288, y: position.y + 96 }),
             data: { label: "To Check Point", effects: {} }
           },
           {
             id: sceneId1,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 400, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 576, y: position.y }),
             data: { 
               label: "Check Point", 
               durationSec: 3,
@@ -223,7 +223,7 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: choiceId2,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 600, y: position.y - 50 }),
+            position: snapPositionToGrid({ x: position.x + 864, y: position.y - 72 }),
             data: { 
               label: "High Path", 
               effects: { energy: -2 }
@@ -232,7 +232,7 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: choiceId3,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 600, y: position.y + 50 }),
+            position: snapPositionToGrid({ x: position.x + 864, y: position.y + 264 }),
             data: { 
               label: "Low Path", 
               effects: { health: -1 }
@@ -241,7 +241,7 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: sceneId2,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 800, y: position.y - 50 }),
+            position: snapPositionToGrid({ x: position.x + 1152, y: position.y - 168 }),
             data: { 
               label: "Success Route", 
               durationSec: 5,
@@ -251,7 +251,7 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: sceneId3,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 800, y: position.y + 50 }),
+            position: snapPositionToGrid({ x: position.x + 1152, y: position.y + 168 }),
             data: { 
               label: "Safe Route", 
               durationSec: 5 
@@ -290,19 +290,19 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: choiceId1,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 200, y: position.y - 60 }),
+            position: snapPositionToGrid({ x: position.x + 312, y: position.y - 72 }),
             data: { label: "Quick Route", effects: { energy: -3 } }
           },
           {
             id: sceneId1,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 400, y: position.y - 60 }),
+            position: snapPositionToGrid({ x: position.x + 600, y: position.y - 168 }),
             data: { label: "Shortcut", durationSec: 3 }
           },
           {
             id: choiceId3,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 600, y: position.y - 30 }),
+            position: snapPositionToGrid({ x: position.x + 888, y: position.y - 72 }),
             data: { label: "Merge", effects: {} }
           },
           
@@ -310,19 +310,19 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: choiceId2,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 200, y: position.y + 60 }),
+            position: snapPositionToGrid({ x: position.x + 312, y: position.y + 264 }),
             data: { label: "Scenic Route", effects: { energy: -1 } }
           },
           {
             id: sceneId2,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 400, y: position.y + 60 }),
+            position: snapPositionToGrid({ x: position.x + 600, y: position.y + 168 }),
             data: { label: "Long Path", durationSec: 6 }
           },
           {
             id: choiceId4,
             type: "choice",
-            position: snapPositionToGrid({ x: position.x + 600, y: position.y + 30 }),
+            position: snapPositionToGrid({ x: position.x + 888, y: position.y + 264 }),
             data: { label: "Merge", effects: {} }
           },
           
@@ -330,7 +330,7 @@ export const blockSnippets: BlockSnippet[] = [
           {
             id: sceneIdFinal,
             type: "scene",
-            position: snapPositionToGrid({ x: position.x + 800, y: position.y }),
+            position: snapPositionToGrid({ x: position.x + 1176, y: position.y }),
             data: { label: "Reunion Point", durationSec: 5 }
           }
         ],
@@ -354,9 +354,9 @@ export const autoLayout = (nodes: (SceneNode | ChoiceNode)[], edges: StoryEdge[]
   // Simple force-directed layout simulation
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
   const iterations = 50;
-  const springLength = 200;
+  const springLength = 336; // 14 grid units
   const springStrength = 0.1;
-  const repulsionStrength = 5000;
+  const repulsionStrength = 20000;
   
   for (let i = 0; i < iterations; i++) {
     // Apply spring forces for connected nodes
@@ -390,7 +390,7 @@ export const autoLayout = (nodes: (SceneNode | ChoiceNode)[], edges: StoryEdge[]
         const dy = n2.position.y - n1.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance > 0 && distance < 300) {
+        if (distance > 0 && distance < 480) { // 20 grid units
           const force = repulsionStrength / (distance * distance);
           const fx = (dx / distance) * force;
           const fy = (dy / distance) * force;

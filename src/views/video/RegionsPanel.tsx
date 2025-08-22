@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState } from 'react';
-import WaveSurfer from 'wavesurfer.js';
 import { useVideoStore } from '@/modules/video/store';
 import { useFlowStore } from '@/modules/flow/store';
 import { isSceneNode } from '@/types';
@@ -18,8 +17,7 @@ export const RegionsPanel: React.FC = () => {
   const nodes = useFlowStore(state => state.nodes);
   const updateNode = useFlowStore(state => state.updateNode);
   
-  const waveformRef = useRef<HTMLDivElement>(null);
-  const wavesurferRef = useRef<WaveSurfer | null>(null);
+
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'thumbnails'>('list');
@@ -85,32 +83,6 @@ export const RegionsPanel: React.FC = () => {
     outline: 'none'
   };
 
-  // Mini waveform for visual reference
-  useEffect(() => {
-    if (!waveformRef.current || !videoUrl || viewMode !== 'list') return;
-
-    const ws = WaveSurfer.create({
-      container: waveformRef.current,
-      waveColor: '#3a3a3a',
-      progressColor: '#E84E36',
-      height: 30,
-      normalize: true,
-      barWidth: 1,
-      barRadius: 0,
-      interact: false,
-      cursorWidth: 0,
-    });
-
-    const video = document.createElement('video');
-    video.src = videoUrl;
-    ws.load(video);
-    
-    wavesurferRef.current = ws;
-
-    return () => {
-      ws.destroy();
-    };
-  }, [videoUrl, viewMode]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -202,23 +174,7 @@ export const RegionsPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Mini waveform preview */}
-      {viewMode === 'list' && videoUrl && (
-        <div style={{ 
-          padding: '8px',
-          backgroundColor: '#0f0f0f',
-          borderBottom: '1px solid #0a0a0a'
-        }}>
-          <div 
-            ref={waveformRef} 
-            style={{ 
-              width: '100%', 
-              height: '30px',
-              opacity: 0.7 
-            }} 
-          />
-        </div>
-      )}
+     
 
       {/* Regions list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px' }}>

@@ -1,24 +1,20 @@
 import React, { useMemo } from "react";
-import { useGameStore } from "@/modules/game/store";
+import { useGameMode, useIsGameOver, useCurrentNodeId, GameService } from "@/modules/game";
+import { useVariables, useVariablesStore, VariablesManager } from "@/modules/variables";
 import { useFlowStore, START_NODE_ID } from "@/modules/flow/store";
 import { useVideoStore } from "@/modules/video/store";
-import { VariablesManager } from "@/modules/variables";
 import { blockSnippets } from "@/modules/flow/blockSnippets";
 import { Play, Square, RotateCcw, Plus, X } from 'lucide-react';
 import { isConditionOperator, isSceneNode, isChoiceNode } from "@/types";
 
 export const Sidebar: React.FC = () => {
-  const mode = useGameStore(state => state.mode);
-  const isGameOver = useGameStore(state => state.isGameOver);
-  const currentNodeId = useGameStore(state => state.currentNodeId);
-  const variables = useGameStore(state => state.variables);
-  const startGame = useGameStore(state => state.startGame);
-  const stopGame = useGameStore(state => state.stopGame);
-  const resetGame = useGameStore(state => state.resetGame);
-  const setVariable = useGameStore(state => state.setVariable);
-  const addVariable = useGameStore(state => state.addVariable);
-  const removeVariable = useGameStore(state => state.removeVariable);
-
+  const mode = useGameMode();
+  const isGameOver = useIsGameOver();
+  const currentNodeId = useCurrentNodeId();
+  
+  const { variables, setVariable } = useVariables();
+  const variablesStore = useVariablesStore();
+  
   const nodes = useFlowStore(state => state.nodes);
   const edges = useFlowStore(state => state.edges);
   const selectedNodeId = useFlowStore(state => state.selectedNodeId);
@@ -46,68 +42,29 @@ export const Sidebar: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const davinciPanelStyle = {
-    backgroundColor: '#1e1e1e',
-    color: '#ccc'
+  const addVariable = () => {
+    const name = prompt("Variable name:");
+    if (name && !variables.find(v => v.name === name)) {
+      variablesStore.setState(state => ({
+        variables: [...state.variables, VariablesManager.createVariable(name, 0)]
+      }));
+    }
   };
 
-  const davinciHeaderStyle = {
-    backgroundColor: '#252525',
-    borderBottom: '1px solid #0a0a0a',
-    color: '#999',
-    fontSize: '11px',
-    fontWeight: 600,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.5px',
-    padding: '8px 12px',
-    height: '32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  };
-
-  const davinciSectionStyle = {
-    backgroundColor: '#1a1a1a',
-    border: '1px solid #2a2a2a',
-    marginBottom: '1px'
-  };
-
-  const davinciInputStyle = {
-    backgroundColor: '#1a1a1a',
-    border: '1px solid #2a2a2a',
-    color: '#ccc',
-    fontSize: '12px',
-    padding: '4px 8px',
-    width: '100%',
-    outline: 'none'
-  };
-
-  const davinciButtonStyle = {
-    backgroundColor: '#2a2a2a',
-    border: '1px solid #3a3a3a',
-    color: '#999',
-    fontSize: '12px',
-    fontWeight: 500,
-    padding: '6px 12px',
-    cursor: 'pointer'
-  };
-
-  const davinciButtonPrimaryStyle = {
-    ...davinciButtonStyle,
-    backgroundColor: '#E84E36',
-    border: '1px solid #E84E36',
-    color: 'white'
+  const removeVariable = (name: string) => {
+    variablesStore.setState(state => ({
+      variables: state.variables.filter(v => v.name !== name)
+    }));
   };
 
   return (
-    <div style={davinciPanelStyle} className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col bg-[#1e1e1e] text-[#ccc]">
       {/* Play Controls */}
       {mode === "edit" && (
-        <div style={{ padding: '12px', borderBottom: '1px solid #0a0a0a' }}>
+        <div className="p-3 border-b border-[#0a0a0a]">
           <button
-            onClick={() => startGame(START_NODE_ID)}
-            style={davinciButtonPrimaryStyle}
-            className="w-full flex items-center justify-center gap-2"
+            onClick={() => GameService.startGame(START_NODE_ID)}
+            className="w-full flex items-center justify-center gap-2 bg-[#E84E36] border border-[#E84E36] text-white text-xs font-medium py-1.5 px-3 hover:bg-[#d63d2a] transition-colors"
           >
             <Play size={14} fill="currentColor" />
             <span>Preview Story</span>
@@ -116,36 +73,29 @@ export const Sidebar: React.FC = () => {
       )}
 
       {mode === "play" && (
-        <div style={{ padding: '12px', borderBottom: '1px solid #0a0a0a' }}>
+        <div className="p-3 border-b border-[#0a0a0a]">
           <div className="flex gap-2">
             <button
-              onClick={() => resetGame(START_NODE_ID)}
-              style={davinciButtonStyle}
-              className="flex-1 flex items-center justify-center gap-1"
+              onClick={() => GameService.startGame(START_NODE_ID)}
+              className="flex-1 flex items-center justify-center gap-1 bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-[11px] font-medium py-1.5 px-3 hover:bg-[#333] hover:text-white transition-colors"
             >
               <RotateCcw size={12} />
-              <span style={{ fontSize: '11px' }}>Reset</span>
+              <span>Reset</span>
             </button>
             <button
-              onClick={stopGame}
-              style={davinciButtonStyle}
-              className="flex-1 flex items-center justify-center gap-1"
+              onClick={() => GameService.stopGame()}
+              className="flex-1 flex items-center justify-center gap-1 bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-[11px] font-medium py-1.5 px-3 hover:bg-[#333] hover:text-white transition-colors"
             >
               <Square size={12} fill="currentColor" />
-              <span style={{ fontSize: '11px' }}>Stop</span>
+              <span>Stop</span>
             </button>
           </div>
           {currentNode && isSceneNode(currentNode) && (
-            <div style={{ 
-              marginTop: '12px', 
-              padding: '8px', 
-              backgroundColor: '#252525',
-              border: '1px solid #E84E36'
-            }}>
-              <div style={{ fontSize: '11px', color: '#E84E36', marginBottom: '4px' }}>
+            <div className="mt-3 p-2 bg-[#252525] border border-[#E84E36]">
+              <div className="text-[11px] text-[#E84E36] mb-1">
                 CURRENT SCENE
               </div>
-              <div style={{ fontSize: '13px', color: '#ccc' }}>
+              <div className="text-[13px] text-[#ccc]">
                 {currentNode.data.label}
               </div>
             </div>
@@ -159,28 +109,19 @@ export const Sidebar: React.FC = () => {
           <>
             {/* Add Blocks - only when scene selected */}
             {selectedNode && isSceneNode(selectedNode) && (
-              <div style={davinciSectionStyle}>
-                <div style={davinciHeaderStyle}>
+              <div className="bg-[#1a1a1a] border border-[#2a2a2a] mb-px">
+                <div className="bg-[#252525] border-b border-[#0a0a0a] text-[#999] text-[11px] font-semibold uppercase tracking-wider px-3 py-2 h-8 flex items-center justify-between">
                   <span>ADD STORY BLOCKS</span>
                 </div>
-                <div style={{ padding: '8px' }}>
+                <div className="p-2">
                   <div className="grid grid-cols-2 gap-2">
                     {blockSnippets.map(snippet => (
                       <button
                         key={snippet.id}
                         onClick={() => addBlockSnippet(snippet.id, selectedNode.id)}
-                        style={{
-                          ...davinciButtonStyle,
-                          fontSize: '11px',
-                          padding: '8px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                        className="hover:border-[#4a4a4a] hover:bg-[#333]"
+                        className="bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-[11px] font-medium p-2 flex flex-col items-center gap-1 hover:border-[#4a4a4a] hover:bg-[#333] transition-colors"
                       >
-                        <span style={{ fontSize: '16px', opacity: 0.6 }}>{snippet.icon}</span>
+                        <span className="text-base opacity-60">{snippet.icon}</span>
                         <span>{snippet.name}</span>
                       </button>
                     ))}
@@ -191,24 +132,23 @@ export const Sidebar: React.FC = () => {
 
             {/* Node Properties */}
             {selectedNode ? (
-              <div style={davinciSectionStyle}>
-                <div style={davinciHeaderStyle}>
+              <div className="bg-[#1a1a1a] border border-[#2a2a2a] mb-px">
+                <div className="bg-[#252525] border-b border-[#0a0a0a] text-[#999] text-[11px] font-semibold uppercase tracking-wider px-3 py-2 h-8 flex items-center justify-between">
                   <span>{isSceneNode(selectedNode) ? "SCENE" : "CHOICE"} PROPERTIES</span>
                   {selectedNode.id !== START_NODE_ID && (
                     <button
                       onClick={() => deleteNode(selectedNode.id)}
-                      style={{ color: '#666', fontSize: '11px' }}
-                      className="hover:text-red-500"
+                      className="text-[#666] text-[11px] hover:text-red-500 transition-colors"
                     >
                       Delete
                     </button>
                   )}
                 </div>
 
-                <div style={{ padding: '12px' }}>
+                <div className="p-3">
                   {/* Name */}
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                  <div className="mb-3">
+                    <label className="text-[11px] text-[#666] block mb-1">
                       NAME
                     </label>
                     <input
@@ -218,7 +158,7 @@ export const Sidebar: React.FC = () => {
                         ...selectedNode.data,
                         label: e.target.value
                       })}
-                      style={davinciInputStyle}
+                      className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#ccc] text-xs px-2 py-1 w-full outline-none focus:border-[#3a3a3a]"
                     />
                   </div>
 
@@ -226,8 +166,8 @@ export const Sidebar: React.FC = () => {
                     <>
                       {/* Video segment */}
                       {segments.length > 0 && (
-                        <div style={{ marginBottom: '12px' }}>
-                          <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                        <div className="mb-3">
+                          <label className="text-[11px] text-[#666] block mb-1">
                             VIDEO SEGMENT
                           </label>
                           <select
@@ -242,7 +182,7 @@ export const Sidebar: React.FC = () => {
                                 durationSec: segment ? Math.round(segment.duration) : selectedNode.data.durationSec
                               });
                             }}
-                            style={davinciInputStyle}
+                            className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#ccc] text-xs px-2 py-1 w-full outline-none focus:border-[#3a3a3a]"
                           >
                             <option value="">None (manual duration)</option>
                             {segments.map((seg, i) => (
@@ -255,8 +195,8 @@ export const Sidebar: React.FC = () => {
                       )}
 
                       {/* Duration */}
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                      <div className="mb-3">
+                        <label className="text-[11px] text-[#666] block mb-1">
                           DURATION (SECONDS)
                         </label>
                         <input
@@ -272,16 +212,15 @@ export const Sidebar: React.FC = () => {
                             }
                           }}
                           disabled={!!selectedNode.data.videoSegmentId}
-                          style={{
-                            ...davinciInputStyle,
-                            opacity: selectedNode.data.videoSegmentId ? 0.5 : 1
-                          }}
+                          className={`bg-[#1a1a1a] border border-[#2a2a2a] text-[#ccc] text-xs px-2 py-1 w-full outline-none focus:border-[#3a3a3a] ${
+                            selectedNode.data.videoSegmentId ? 'opacity-50' : ''
+                          }`}
                         />
                       </div>
 
                       {/* Condition */}
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                      <div className="mb-3">
+                        <label className="text-[11px] text-[#666] block mb-1">
                           ACCESS CONDITION
                         </label>
                         <div className="flex gap-2">
@@ -295,7 +234,7 @@ export const Sidebar: React.FC = () => {
                                 value: selectedNode.data.condition?.value || 1
                               } : undefined
                             })}
-                            style={{ ...davinciInputStyle, flex: 1 }}
+                            className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#ccc] text-xs px-2 py-1 flex-1 outline-none focus:border-[#3a3a3a]"
                           >
                             <option value="">Always accessible</option>
                             {variables.map(v => (
@@ -319,7 +258,7 @@ export const Sidebar: React.FC = () => {
                                     });
                                   }
                                 }}
-                                style={{ ...davinciInputStyle, width: '60px' }}
+                                className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#ccc] text-xs px-2 py-1 w-[60px] outline-none focus:border-[#3a3a3a]"
                               >
                                 <option value="lt">&lt;</option>
                                 <option value="lte">≤</option>
@@ -344,7 +283,7 @@ export const Sidebar: React.FC = () => {
                                     });
                                   }
                                 }}
-                                style={{ ...davinciInputStyle, width: '60px' }}
+                                className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#ccc] text-xs px-2 py-1 w-[60px] outline-none focus:border-[#3a3a3a]"
                               />
                             </>
                           )}
@@ -355,15 +294,15 @@ export const Sidebar: React.FC = () => {
 
                   {isChoiceNode(selectedNode) && (
                     <div>
-                      <label style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '8px' }}>
+                      <label className="text-[11px] text-[#666] block mb-2">
                         VARIABLE EFFECTS
                       </label>
-                      <div style={{ backgroundColor: '#0f0f0f', padding: '8px', border: '1px solid #2a2a2a' }}>
+                      <div className="bg-[#0f0f0f] p-2 border border-[#2a2a2a]">
                         {variables.map(v => {
                           const effect = selectedNode.data.effects[v.name] ?? 0;
                           return (
-                            <div key={v.name} className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
-                              <span style={{ width: '80px', fontSize: '11px', color: '#666', fontFamily: 'monospace' }}>
+                            <div key={v.name} className="flex items-center gap-2 mb-2 last:mb-0">
+                              <span className="w-20 text-[11px] text-[#666] font-mono">
                                 {v.name}
                               </span>
                               <button
@@ -371,23 +310,13 @@ export const Sidebar: React.FC = () => {
                                   ...selectedNode.data,
                                   effects: { ...selectedNode.data.effects, [v.name]: effect - 1 }
                                 })}
-                                style={{
-                                  ...davinciButtonStyle,
-                                  width: '24px',
-                                  height: '24px',
-                                  padding: 0,
-                                  fontSize: '14px'
-                                }}
+                                className="w-6 h-6 bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-sm font-medium hover:bg-[#333] transition-colors"
                               >
                                 -
                               </button>
-                              <span style={{ 
-                                width: '40px', 
-                                textAlign: 'center', 
-                                fontSize: '12px', 
-                                fontFamily: 'monospace',
-                                color: effect > 0 ? '#4ade80' : effect < 0 ? '#ef4444' : '#666'
-                              }}>
+                              <span className={`w-10 text-center text-xs font-mono ${
+                                effect > 0 ? 'text-green-400' : effect < 0 ? 'text-red-400' : 'text-[#666]'
+                              }`}>
                                 {effect > 0 ? '+' : ''}{effect}
                               </span>
                               <button
@@ -395,13 +324,7 @@ export const Sidebar: React.FC = () => {
                                   ...selectedNode.data,
                                   effects: { ...selectedNode.data.effects, [v.name]: effect + 1 }
                                 })}
-                                style={{
-                                  ...davinciButtonStyle,
-                                  width: '24px',
-                                  height: '24px',
-                                  padding: 0,
-                                  fontSize: '14px'
-                                }}
+                                className="w-6 h-6 bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-sm font-medium hover:bg-[#333] transition-colors"
                               >
                                 +
                               </button>
@@ -414,16 +337,15 @@ export const Sidebar: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div style={{ padding: '24px', textAlign: 'center' }}>
-                <p style={{ color: '#666', fontSize: '12px', marginBottom: '16px' }}>
+              <div className="p-6 text-center">
+                <p className="text-[#666] text-xs mb-4">
                   No node selected
                 </p>
                 <button
                   onClick={addSceneNode}
-                  style={davinciButtonStyle}
-                  className="hover:border-[#4a4a4a] hover:bg-[#333]"
+                  className="bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-xs font-medium py-1.5 px-3 hover:border-[#4a4a4a] hover:bg-[#333] transition-colors inline-flex items-center"
                 >
-                  <Plus size={12} className="inline mr-2" />
+                  <Plus size={12} className="mr-2" />
                   Add Scene
                 </button>
               </div>
@@ -431,48 +353,36 @@ export const Sidebar: React.FC = () => {
           </>
         ) : (
           /* Play mode - current state display */
-          <div style={{ padding: '12px' }}>
+          <div className="p-3">
             {/* Current state info would go here */}
           </div>
         )}
 
         {/* Variables Section */}
-        <div style={davinciSectionStyle}>
-          <div style={davinciHeaderStyle}>
+        <div className="bg-[#1a1a1a] border border-[#2a2a2a] mb-px">
+          <div className="bg-[#252525] border-b border-[#0a0a0a] text-[#999] text-[11px] font-semibold uppercase tracking-wider px-3 py-2 h-8 flex items-center justify-between">
             <span>VARIABLES</span>
             {mode === "edit" && (
               <button
-                onClick={() => {
-                  const name = prompt("Variable name:");
-                  if (name && !variables.find(v => v.name === name)) {
-                    addVariable(VariablesManager.createVariable(name, 0));
-                  }
-                }}
-                style={{ color: '#666', fontSize: '16px' }}
-                className="hover:text-[#999]"
+                onClick={addVariable}
+                className="text-[#666] text-base hover:text-[#999] transition-colors"
               >
                 <Plus size={12} />
               </button>
             )}
           </div>
           
-          <div style={{ padding: '8px' }}>
+          <div className="p-2">
             {variables.map(v => (
-              <div key={v.name} className="flex items-center justify-between" style={{ 
-                padding: '6px 8px',
-                backgroundColor: '#0f0f0f',
-                marginBottom: '4px',
-                border: '1px solid #2a2a2a'
-              }}>
-                <span style={{ fontSize: '12px', color: '#999', fontFamily: 'monospace' }}>
+              <div key={v.name} className="flex items-center justify-between p-1.5 px-2 bg-[#0f0f0f] mb-1 border border-[#2a2a2a]">
+                <span className="text-xs text-[#999] font-mono">
                   {v.name}
                 </span>
                 <div className="flex items-center gap-2">
                   {mode === "edit" && (
                     <button
                       onClick={() => removeVariable(v.name)}
-                      style={{ color: '#666', fontSize: '10px' }}
-                      className="hover:text-red-500"
+                      className="text-[#666] text-[10px] hover:text-red-500 transition-colors"
                     >
                       <X size={10} />
                     </button>
@@ -487,16 +397,12 @@ export const Sidebar: React.FC = () => {
                       }
                     }}
                     disabled={mode === "play"}
-                    style={{
-                      ...davinciInputStyle,
-                      width: '60px',
-                      textAlign: 'right',
-                      fontFamily: 'monospace',
-                      opacity: mode === "play" ? 0.5 : 1
-                    }}
+                    className={`bg-[#1a1a1a] border border-[#2a2a2a] text-[#ccc] text-xs px-2 py-1 w-[60px] text-right font-mono outline-none focus:border-[#3a3a3a] ${
+                      mode === "play" ? 'opacity-50' : ''
+                    }`}
                   />
                   {mode === "play" && v.value !== v.initialValue && (
-                    <span style={{ fontSize: '11px', color: '#666' }}>
+                    <span className="text-[11px] text-[#666]">
                       ({v.initialValue})
                     </span>
                   )}
@@ -508,17 +414,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Status bar */}
-      <div style={{
-        height: '24px',
-        backgroundColor: '#1a1a1a',
-        borderTop: '1px solid #0a0a0a',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 12px',
-        fontSize: '11px',
-        color: '#666'
-      }}>
+      <div className="h-6 bg-[#1a1a1a] border-t border-[#0a0a0a] flex items-center justify-between px-3 text-[11px] text-[#666]">
         <span>{nodes.length} nodes • {edges.length} edges</span>
         <span>{selectedNodeId ? `ID: ${selectedNodeId}` : 'Ready'}</span>
       </div>
