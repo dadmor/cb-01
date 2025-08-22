@@ -1,3 +1,4 @@
+// src/modules/flow/FlowCanvas.tsx
 import React, { useCallback, useMemo, useRef, useEffect } from "react";
 import {
   ReactFlow,
@@ -20,87 +21,79 @@ import { useGameMode, useCurrentNodeId, useIsGameOver, setGameState } from "@/mo
 import { useVariables, useVariablesStore, VariablesManager } from "@/modules/variables";
 import { StoryNode, SceneNode as SceneNodeType, ChoiceNode as ChoiceNodeType, isSceneNode, isChoiceNode } from "./types";
 
-// Define node types
+// ============= MEMOIZED NODE TYPES =============
+// Tworzone RAZ, nie przy każdym renderze
 const nodeTypes: NodeTypes = {
   scene: SceneNode,
   choice: ChoiceNode,
-} as const;
+};
 
-// Default edge options
+// ============= MEMOIZED EDGE OPTIONS =============
 const defaultEdgeOptions = {
   type: "smoothstep",
   markerEnd: "arrow",
   style: {
     strokeWidth: 2,
-    stroke: "#52525b", // zinc-600
+    stroke: "#52525b",
   },
 };
 
-// Helper function for edge styling
+// ============= EXTRACTED CONSTANTS =============
+const SELECTED_EDGE_COLOR = "#dc2626";
+const CONDITIONAL_EDGE_COLOR = "#ea580c";
+const LOCKED_EDGE_COLOR = "#3f3f46";
+
+// ============= PERFORMANCE: Wyciągnięte poza komponent =============
 const getEdgeStyle = (
-  edge: Edge,
-  nodes: StoryNode[],
-  variables: any,
-  mode: "edit" | "play",
-  selectedNodeId: string | null
+  isSelectedChoice: boolean,
+  isConditional: boolean,
+  isLocked: boolean
 ) => {
-  const targetNode = nodes.find((n) => n.id === edge.target);
-
-  // Check if this edge is connected to selected choice node
-  const isSelectedChoice =
-    !!selectedNodeId &&
-    (edge.source === selectedNodeId || edge.target === selectedNodeId) &&
-    nodes.find((n) => n.id === selectedNodeId && isChoiceNode(n));
-
   if (isSelectedChoice) {
     return {
       ...defaultEdgeOptions,
       style: {
         strokeWidth: 3,
-        stroke: "#dc2626", // red-600 color for selected
+        stroke: SELECTED_EDGE_COLOR,
       },
       markerEnd: {
         type: "arrow" as const,
-        color: "#dc2626",
+        color: SELECTED_EDGE_COLOR,
       },
     };
   }
 
-  if (targetNode && isSceneNode(targetNode) && targetNode.data.condition) {
-    const isLocked =
-      mode === "play"
-        ? !VariablesManager.evaluate(variables, targetNode.data.condition)
-        : false;
-
-    if (mode === "edit" || isLocked) {
-      return {
-        ...defaultEdgeOptions,
-        style: {
-          strokeWidth: 2,
-          stroke: mode === "edit" ? "#ea580c" : "#3f3f46", // orange in edit, gray in play
-          strokeDasharray: "5 5",
-          opacity: mode === "edit" ? 0.7 : 0.5,
-        },
-        animated: false,
-        markerEnd: {
-          type: "arrow" as const,
-          color: mode === "edit" ? "#ea580c" : "#3f3f46",
-        },
-      };
-    }
+  if (isConditional || isLocked) {
+    const color = isLocked ? LOCKED_EDGE_COLOR : CONDITIONAL_EDGE_COLOR;
+    return {
+      ...defaultEdgeOptions,
+      style: {
+        strokeWidth: 2,
+        stroke: color,
+        strokeDasharray: "5 5",
+        opacity: isLocked ? 0.5 : 0.7,
+      },
+      animated: false,
+      markerEnd: {
+        type: "arrow" as const,
+        color,
+      },
+    };
   }
 
   return defaultEdgeOptions;
 };
 
 export const FlowCanvas: React.FC = React.memo(() => {
-  const nodes = useNodes();
-  const edges = useEdges();
-  const selectedNodeId = useSelectedNodeId();
+  // ============= STORE FUNCTIONS =============
   const onNodesChange = useFlowStore((state) => state.onNodesChange);
   const onEdgesChange = useFlowStore((state) => state.onEdgesChange);
   const createChoice = useFlowStore((state) => state.createChoice);
   const selectNode = useFlowStore((state) => state.selectNode);
+
+  const nodes = useNodes();
+  const edges = useEdges();
+  const selectedNodeId = useSelectedNodeId();
   const getChoicesForScene = useFlowStore((state) => state.getChoicesForScene);
 
   const mode = useGameMode();
@@ -108,34 +101,35 @@ export const FlowCanvas: React.FC = React.memo(() => {
   const isGameOver = useIsGameOver();
   const { variables, applyEffects } = useVariables();
 
+  // ============= REFS dla timerów =============
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ============= MEMOIZED: Current node =============
   const currentNode = useMemo(
-    () =>
-      nodes.find(
-        (n): n is SceneNodeType | ChoiceNodeType => n.id === currentNodeId
-      ),
+    () => nodes.find((n): n is SceneNodeType | ChoiceNodeType => n.id === currentNodeId),
     [nodes, currentNodeId]
   );
 
+  // ============= MEMOIZED: Node map dla szybkiego lookup =============
+  const nodeMap = useMemo(
+    () => new Map(nodes.map(n => [n.id, n])),
+    [nodes]
+  );
+
+  // ============= CALLBACK: Choice click handler =============
   const handleChoiceClick = useCallback(
     (choiceNodeId: string) => {
       if (mode !== "play" || isGameOver) return;
 
-      const choiceNode = nodes.find(
-        (n): n is ChoiceNodeType => n.id === choiceNodeId && isChoiceNode(n)
-      );
-      if (!choiceNode) return;
+      const choiceNode = nodeMap.get(choiceNodeId);
+      if (!choiceNode || !isChoiceNode(choiceNode)) return;
 
       const targetEdge = edges.find((e) => e.source === choiceNodeId);
       if (!targetEdge) return;
 
-      const targetNode = nodes.find(
-        (n): n is SceneNodeType =>
-          n.id === targetEdge.target && isSceneNode(n)
-      );
-      if (!targetNode) return;
+      const targetNode = nodeMap.get(targetEdge.target);
+      if (!targetNode || !isSceneNode(targetNode)) return;
 
       applyEffects(choiceNode.data.effects);
       
@@ -144,45 +138,54 @@ export const FlowCanvas: React.FC = React.memo(() => {
         setGameState({ currentNodeId: targetNode.id });
       }
     },
-    [
-      mode,
-      isGameOver,
-      nodes,
-      edges,
-      applyEffects
-    ]
+    [mode, isGameOver, nodeMap, edges, applyEffects]
   );
 
+  // ============= MEMOIZED: Enriched nodes (główna optymalizacja!) =============
   const enrichedNodes = useMemo((): StoryNode[] => {
+    // Jeśli nic się nie zmieniło, nie przeliczaj
+    if (!nodes.length) return [];
+
     return nodes.map((node): StoryNode => {
       if (isSceneNode(node)) {
         const isCurrent = node.id === currentNodeId;
+        const isUnlocked = mode === "edit" 
+          ? !node.data.condition
+          : VariablesManager.evaluate(variables, node.data.condition);
 
-        const isUnlocked =
-          mode === "edit"
-            ? !node.data.condition
-            : VariablesManager.evaluate(variables, node.data.condition);
+        // Tylko jeśli coś się zmieniło
+        if (
+          node.data.isCurrent === isCurrent &&
+          node.data.isUnlocked === isUnlocked &&
+          node.data.hasCondition === !!node.data.condition
+        ) {
+          return node; // Zwróć ten sam obiekt!
+        }
 
-        const hasCondition = !!node.data.condition;
-
-        const sceneNode: SceneNodeType = {
+        return {
           ...node,
           data: {
             ...node.data,
             isUnlocked,
             isCurrent,
-            hasCondition,
+            hasCondition: !!node.data.condition,
           },
         };
-        return sceneNode;
       }
 
       if (isChoiceNode(node)) {
         const incomingEdge = edges.find((e) => e.target === node.id);
-        const isAvailable =
-          mode === "play" && incomingEdge?.source === currentNodeId;
+        const isAvailable = mode === "play" && incomingEdge?.source === currentNodeId;
+        
+        // Tylko jeśli coś się zmieniło
+        if (
+          node.data.isAvailable === isAvailable &&
+          (isAvailable ? node.data.onClick === handleChoiceClick : true)
+        ) {
+          return node; // Zwróć ten sam obiekt!
+        }
 
-        const choiceNode: ChoiceNodeType = {
+        return {
           ...node,
           data: {
             ...node.data,
@@ -191,20 +194,41 @@ export const FlowCanvas: React.FC = React.memo(() => {
             onClick: isAvailable ? () => handleChoiceClick(node.id) : undefined,
           },
         };
-        return choiceNode;
       }
 
       return node;
     });
   }, [nodes, edges, mode, currentNodeId, variables, handleChoiceClick]);
 
+  // ============= MEMOIZED: Enriched edges =============
   const enrichedEdges = useMemo(() => {
-    return edges.map((edge) => ({
-      ...edge,
-      ...getEdgeStyle(edge, nodes, variables, mode, selectedNodeId),
-    }));
-  }, [edges, nodes, variables, mode, selectedNodeId]);
+    return edges.map((edge) => {
+      const targetNode = nodeMap.get(edge.target);
+      
+      const isSelectedChoice = !!selectedNodeId && 
+        (edge.source === selectedNodeId || edge.target === selectedNodeId) &&
+        !!nodeMap.get(selectedNodeId) &&
+        isChoiceNode(nodeMap.get(selectedNodeId)!);
 
+      const isConditional = !!(targetNode && 
+        isSceneNode(targetNode) && 
+        targetNode.data.condition &&
+        mode === "edit");
+
+      const isLocked = !!(targetNode &&
+        isSceneNode(targetNode) &&
+        targetNode.data.condition &&
+        mode === "play" &&
+        !VariablesManager.evaluate(variables, targetNode.data.condition));
+
+      return {
+        ...edge,
+        ...getEdgeStyle(isSelectedChoice, isConditional, isLocked),
+      };
+    });
+  }, [edges, nodeMap, variables, mode, selectedNodeId]);
+
+  // ============= CLEANUP dla timerów =============
   const cleanup = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -216,27 +240,21 @@ export const FlowCanvas: React.FC = React.memo(() => {
     }
   }, []);
 
+  // ============= TIMER EFFECT (uproszczony) =============
   useEffect(() => {
     cleanup();
 
-    if (
-      mode !== "play" ||
-      isGameOver ||
-      !currentNode ||
-      !isSceneNode(currentNode)
-    ) {
+    if (mode !== "play" || isGameOver || !currentNode || !isSceneNode(currentNode)) {
       return;
     }
 
-    const sceneNode: SceneNodeType = currentNode;
+    const sceneNode = currentNode;
     const { durationSec = 0, defaultChoiceId } = sceneNode.data;
     const outgoingChoices = getChoicesForScene(sceneNode.id);
 
     const handleTimeout = () => {
       if (defaultChoiceId) {
-        const defaultChoice = outgoingChoices.find(
-          (c) => c.id === defaultChoiceId
-        );
+        const defaultChoice = outgoingChoices.find(c => c.id === defaultChoiceId);
         if (defaultChoice) {
           handleChoiceClick(defaultChoice.id);
         } else {
@@ -251,31 +269,27 @@ export const FlowCanvas: React.FC = React.memo(() => {
       const totalMs = durationSec * 1000;
       const startTime = Date.now();
 
+      // Update remaining time
       intervalRef.current = setInterval(() => {
         const elapsed = Date.now() - startTime;
         const remaining = Math.max(0, totalMs - elapsed);
-
+        
         useFlowStore.getState().updateNode(sceneNode.id, {
           ...sceneNode.data,
           remainingMs: remaining,
         });
       }, 100);
 
+      // Set timeout
       timeoutRef.current = setTimeout(handleTimeout, totalMs);
     } else {
       timeoutRef.current = setTimeout(handleTimeout, 100);
     }
 
     return cleanup;
-  }, [
-    mode,
-    isGameOver,
-    currentNode,
-    handleChoiceClick,
-    cleanup,
-    getChoicesForScene,
-  ]);
+  }, [mode, isGameOver, currentNode, handleChoiceClick, cleanup, getChoicesForScene]);
 
+  // ============= CALLBACKS =============
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
       if (params.source && params.target) {
@@ -292,8 +306,8 @@ export const FlowCanvas: React.FC = React.memo(() => {
           selectNode(params.nodes[0].id);
         } else if (params.edges.length > 0) {
           const edge = params.edges[0];
-          const sourceNode = nodes.find((n) => n.id === edge.source);
-          const targetNode = nodes.find((n) => n.id === edge.target);
+          const sourceNode = nodeMap.get(edge.source);
+          const targetNode = nodeMap.get(edge.target);
 
           if (sourceNode && isChoiceNode(sourceNode)) {
             selectNode(sourceNode.id);
@@ -307,7 +321,7 @@ export const FlowCanvas: React.FC = React.memo(() => {
         }
       }
     },
-    [mode, selectNode, nodes]
+    [mode, selectNode, nodeMap]
   );
 
   const onPaneClick = useCallback(() => {
@@ -316,23 +330,20 @@ export const FlowCanvas: React.FC = React.memo(() => {
     }
   }, [mode, selectNode]);
 
+  // ============= KEYBOARD HANDLER =============
   useEffect(() => {
+    if (mode !== "edit") return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        mode === "edit" &&
-        (event.key === "Delete" || event.key === "Backspace")
-      ) {
-        const selectedNodeId = useFlowStore.getState().selectedNodeId;
-        if (selectedNodeId) {
-          event.preventDefault();
-          useFlowStore.getState().deleteNode(selectedNodeId);
-        }
+      if ((event.key === "Delete" || event.key === "Backspace") && selectedNodeId) {
+        event.preventDefault();
+        useFlowStore.getState().deleteNode(selectedNodeId);
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [mode]);
+  }, [mode, selectedNodeId]);
 
   return (
     <ReactFlow
