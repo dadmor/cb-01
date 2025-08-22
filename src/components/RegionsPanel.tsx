@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import { useVideoStore } from '@/modules/video/store';
-import { useFlowStore, isSceneNode } from '@/modules/flow/store';
-
+import { useFlowStore } from '@/modules/flow/store';
+import { isSceneNode } from '@/types';
 
 export const RegionsPanel: React.FC = () => {
   const videoFile = useVideoStore(state => state.videoFile);

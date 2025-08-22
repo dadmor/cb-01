@@ -7,22 +7,30 @@ import ReactFlow, {
   NodeTypes,
   OnConnect,
   Node,
+  Edge,
+  OnSelectionChangeParams,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
 import { SceneNode } from "./nodes/SceneNode";
 import { ChoiceNode } from "./nodes/ChoiceNode";
-import { useFlowStore, isSceneNode, isChoiceNode } from "./store";
+import { useFlowStore } from "./store";
 import { useGameStore } from "@/modules/game/store";
 import { useVideoStore } from "@/modules/video/store";
 import { VariablesManager } from "@/modules/variables";
-import { ChoiceNode as ChoiceNodeType } from "@/types";
+import { 
+  ChoiceNode as ChoiceNodeType, 
+  SceneNode as SceneNodeType, 
+  StoryNode,
+  isSceneNode,
+  isChoiceNode
+} from "@/types";
 
-// Memoize nodeTypes to prevent React Flow warning
+// Properly typed nodeTypes
 const nodeTypes: NodeTypes = {
   scene: SceneNode,
   choice: ChoiceNode,
-};
+} as const;
 
 export const FlowCanvas: React.FC = () => {
   const nodes = useFlowStore((state) => state.nodes);
@@ -46,25 +54,30 @@ export const FlowCanvas: React.FC = () => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Get current node
+  // Get current node with proper typing
   const currentNode = useMemo(
-    () => nodes.find((n) => n.id === currentNodeId),
+    (): SceneNodeType | ChoiceNodeType | undefined => 
+      nodes.find((n): n is SceneNodeType | ChoiceNodeType => n.id === currentNodeId),
     [nodes, currentNodeId]
   );
 
-  // Handle choice click
+  // Handle choice click with proper typing
   const handleChoiceClick = useCallback(
     (choiceNodeId: string) => {
       if (mode !== "play" || isGameOver) return;
 
-      const choiceNode = nodes.find((n) => n.id === choiceNodeId);
-      if (!choiceNode || !isChoiceNode(choiceNode)) return;
+      const choiceNode = nodes.find((n): n is ChoiceNodeType => 
+        n.id === choiceNodeId && isChoiceNode(n)
+      );
+      if (!choiceNode) return;
 
       const targetEdge = edges.find((e) => e.source === choiceNodeId);
       if (!targetEdge) return;
 
-      const targetNode = nodes.find((n) => n.id === targetEdge.target);
-      if (!targetNode || !isSceneNode(targetNode)) return;
+      const targetNode = nodes.find((n): n is SceneNodeType => 
+        n.id === targetEdge.target && isSceneNode(n)
+      );
+      if (!targetNode) return;
 
       // Apply effects and check if target is unlocked
       const newVariables = VariablesManager.applyEffects(
@@ -80,9 +93,9 @@ export const FlowCanvas: React.FC = () => {
     [mode, isGameOver, nodes, edges, variables, updateVariables, setCurrentNode]
   );
 
-  // Enrich nodes with runtime state
-  const enrichedNodes = useMemo(() => {
-    return nodes.map((node) => {
+  // Enrich nodes with runtime state - properly typed
+  const enrichedNodes = useMemo((): StoryNode[] => {
+    return nodes.map((node): StoryNode => {
       if (isSceneNode(node)) {
         const isUnlocked = VariablesManager.evaluate(
           variables,
@@ -121,7 +134,7 @@ export const FlowCanvas: React.FC = () => {
     });
   }, [nodes, edges, mode, currentNodeId, variables, handleChoiceClick]);
 
-  // Timer and video playback effect
+  // Timer and video playback effect with proper typing
   useEffect(() => {
     const cleanup = () => {
       if (intervalRef.current) {
@@ -155,6 +168,7 @@ export const FlowCanvas: React.FC = () => {
       videoSegmentId,
       defaultChoiceId,
     } = currentNode.data;
+    
     const outgoingChoices = edges
       .filter((e) => e.source === currentNode.id)
       .map((e) => nodes.find((n) => n.id === e.target))
@@ -190,7 +204,7 @@ export const FlowCanvas: React.FC = () => {
         videoRef.current.play();
 
         const videoDuration = (segment.end - segment.start) * 1000;
-        let startTime = Date.now();
+        const startTime = Date.now();
 
         intervalRef.current = setInterval(() => {
           const elapsed = Date.now() - startTime;
@@ -215,7 +229,7 @@ export const FlowCanvas: React.FC = () => {
     // Regular timer
     if (durationSec > 0) {
       const totalMs = durationSec * 1000;
-      let startTime = Date.now();
+      const startTime = Date.now();
 
       intervalRef.current = setInterval(() => {
         const elapsed = Date.now() - startTime;
@@ -246,9 +260,11 @@ export const FlowCanvas: React.FC = () => {
   );
 
   const onSelectionChange = useCallback(
-    ({ nodes }: { nodes: Node[] }) => {
-      if (mode === "edit") {
-        selectNode(nodes[0]?.id || null);
+    (params: OnSelectionChangeParams) => {
+      if (mode === "edit" && params.nodes.length > 0) {
+        selectNode(params.nodes[0].id);
+      } else if (mode === "edit") {
+        selectNode(null);
       }
     },
     [mode, selectNode]

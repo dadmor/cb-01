@@ -1,10 +1,11 @@
 import React, { useMemo } from "react";
 import { useGameStore } from "@/modules/game/store";
-import { useFlowStore, isSceneNode, isChoiceNode, START_NODE_ID } from "@/modules/flow/store";
+import { useFlowStore, START_NODE_ID } from "@/modules/flow/store";
 import { useVideoStore } from "@/modules/video/store";
 import { VariablesManager } from "@/modules/variables";
 import { blockSnippets } from "@/modules/flow/blockSnippets";
 import { Play, Square, RotateCcw, Plus, X } from 'lucide-react';
+import { isConditionOperator, isSceneNode, isChoiceNode } from "@/types";
 
 export const Sidebar: React.FC = () => {
   const mode = useGameStore(state => state.mode);
@@ -232,7 +233,9 @@ export const Sidebar: React.FC = () => {
                           <select
                             value={selectedNode.data.videoSegmentId || ""}
                             onChange={(e) => {
-                              const segment = segments.find(s => s.id === e.target.value);
+                              const segmentId = e.target.value;
+                              const segment = segmentId ? segments.find(s => s.id === segmentId) : undefined;
+                              
                               updateNode(selectedNode.id, {
                                 ...selectedNode.data,
                                 videoSegmentId: segment?.id,
@@ -259,10 +262,15 @@ export const Sidebar: React.FC = () => {
                         <input
                           type="number"
                           value={selectedNode.data.durationSec}
-                          onChange={(e) => updateNode(selectedNode.id, {
-                            ...selectedNode.data,
-                            durationSec: parseInt(e.target.value) || 0
-                          })}
+                          onChange={(e) => {
+                            const duration = parseInt(e.target.value);
+                            if (!isNaN(duration) && duration >= 0) {
+                              updateNode(selectedNode.id, {
+                                ...selectedNode.data,
+                                durationSec: duration
+                              });
+                            }
+                          }}
                           disabled={!!selectedNode.data.videoSegmentId}
                           style={{
                             ...davinciInputStyle,
@@ -299,13 +307,18 @@ export const Sidebar: React.FC = () => {
                             <>
                               <select
                                 value={selectedNode.data.condition.op}
-                                onChange={(e) => updateNode(selectedNode.id, {
-                                  ...selectedNode.data,
-                                  condition: {
-                                    ...selectedNode.data.condition!,
-                                    op: e.target.value as any
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (isConditionOperator(value) && selectedNode.data.condition) {
+                                    updateNode(selectedNode.id, {
+                                      ...selectedNode.data,
+                                      condition: {
+                                        ...selectedNode.data.condition,
+                                        op: value
+                                      }
+                                    });
                                   }
-                                })}
+                                }}
                                 style={{ ...davinciInputStyle, width: '60px' }}
                               >
                                 <option value="lt">&lt;</option>
@@ -319,13 +332,18 @@ export const Sidebar: React.FC = () => {
                               <input
                                 type="number"
                                 value={selectedNode.data.condition.value}
-                                onChange={(e) => updateNode(selectedNode.id, {
-                                  ...selectedNode.data,
-                                  condition: {
-                                    ...selectedNode.data.condition!,
-                                    value: parseInt(e.target.value) || 0
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  if (!isNaN(value) && selectedNode.data.condition) {
+                                    updateNode(selectedNode.id, {
+                                      ...selectedNode.data,
+                                      condition: {
+                                        ...selectedNode.data.condition,
+                                        value
+                                      }
+                                    });
                                   }
-                                })}
+                                }}
                                 style={{ ...davinciInputStyle, width: '60px' }}
                               />
                             </>
@@ -342,7 +360,7 @@ export const Sidebar: React.FC = () => {
                       </label>
                       <div style={{ backgroundColor: '#0f0f0f', padding: '8px', border: '1px solid #2a2a2a' }}>
                         {variables.map(v => {
-                          const effect = selectedNode.data.effects[v.name] || 0;
+                          const effect = selectedNode.data.effects[v.name] ?? 0;
                           return (
                             <div key={v.name} className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
                               <span style={{ width: '80px', fontSize: '11px', color: '#666', fontFamily: 'monospace' }}>
@@ -462,7 +480,12 @@ export const Sidebar: React.FC = () => {
                   <input
                     type="number"
                     value={v.value}
-                    onChange={(e) => setVariable(v.name, parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value)) {
+                        setVariable(v.name, value);
+                      }
+                    }}
                     disabled={mode === "play"}
                     style={{
                       ...davinciInputStyle,

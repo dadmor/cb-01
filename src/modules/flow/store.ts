@@ -6,17 +6,29 @@ import {
   NodeChange, 
   EdgeChange 
 } from "reactflow";
-import { StoryNode, StoryEdge, SceneNode, ChoiceNode } from "@/types";
+import { 
+  StoryNode, 
+  StoryEdge, 
+  SceneNode, 
+  ChoiceNode,
+  SceneNodeData,
+  ChoiceNodeData,
+  isSceneNode,
+  isChoiceNode
+} from "@/types";
 import { blockSnippets, autoLayout } from "./blockSnippets";
 import { snapPositionToGrid } from "./gridHelpers";
 
 // Type-safe wrappers for ReactFlow functions
 const applyNodeChanges = (changes: NodeChange[], nodes: StoryNode[]): StoryNode[] => {
-  return applyNodeChangesRF(changes, nodes as any) as StoryNode[];
+  // React Flow expects Node<any> but we know our types are correct
+  const genericNodes = nodes as Array<SceneNode | ChoiceNode>;
+  const result = applyNodeChangesRF(changes, genericNodes);
+  return result as StoryNode[];
 };
 
 const applyEdgeChanges = (changes: EdgeChange[], edges: StoryEdge[]): StoryEdge[] => {
-  return applyEdgeChangesRF(changes, edges as any) as StoryEdge[];
+  return applyEdgeChangesRF(changes, edges);
 };
 
 interface FlowStore {
@@ -27,7 +39,10 @@ interface FlowStore {
   // Node operations
   addSceneNode: () => void;
   addBlockSnippet: (snippetId: string, sourceNodeId: string) => void;
-  updateNode: (nodeId: string, data: any) => void;
+  updateNode: <T extends StoryNode>(
+    nodeId: string, 
+    data: T extends SceneNode ? SceneNodeData : ChoiceNodeData
+  ) => void;
   deleteNode: (nodeId: string) => void;
   
   // Edge operations
@@ -45,7 +60,7 @@ interface FlowStore {
   clearProject: () => void;
 }
 
-export const START_NODE_ID = "scene-1";
+export const START_NODE_ID = "scene-1" as const;
 let nextId = 2;
 
 const createSceneNode = (position = { x: 400, y: 250 }): SceneNode => ({
@@ -73,14 +88,14 @@ const createChoiceNode = (
 
 export const useFlowStore = create<FlowStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       nodes: [
         {
           id: START_NODE_ID,
           type: "scene",
           position: snapPositionToGrid({ x: 250, y: 250 }),
           data: { label: "Start", durationSec: 5 }
-        }
+        } as SceneNode
       ],
       edges: [],
       selectedNodeId: null,
@@ -138,11 +153,18 @@ export const useFlowStore = create<FlowStore>()(
         };
       }),
 
-      updateNode: (nodeId, data) => set(state => ({
-        nodes: state.nodes.map(node => 
-          node.id === nodeId ? { ...node, data } : node
-        )
-      })),
+      updateNode: (nodeId, data) => set(state => {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return state;
+
+        return {
+          nodes: state.nodes.map(n => 
+            n.id === nodeId 
+              ? { ...n, data: data as any } // Safe because we enforce types at call site
+              : n
+          )
+        };
+      }),
 
       deleteNode: (nodeId) => {
         if (nodeId === START_NODE_ID) return;
@@ -152,7 +174,7 @@ export const useFlowStore = create<FlowStore>()(
           if (!nodeToDelete) return state;
           
           // If deleting a choice node, remove all connected edges
-          if (nodeToDelete.type === 'choice') {
+          if (isChoiceNode(nodeToDelete)) {
             return {
               nodes: state.nodes.filter(n => n.id !== nodeId),
               edges: state.edges.filter(e => 
@@ -175,7 +197,7 @@ export const useFlowStore = create<FlowStore>()(
           
           // Check each choice node in the graph
           state.nodes.forEach(node => {
-            if (node.type === 'choice') {
+            if (isChoiceNode(node)) {
               // Count how many edges this choice node will have after deletion
               const currentEdges = state.edges.filter(e => 
                 (e.source === node.id || e.target === node.id) &&
@@ -218,7 +240,7 @@ export const useFlowStore = create<FlowStore>()(
         if (existingDirectConnection) return state;
         
         // If connecting two scenes, create a choice node between them
-        if (sourceNode.type === 'scene' && targetNode.type === 'scene') {
+        if (isSceneNode(sourceNode) && isSceneNode(targetNode)) {
           const choiceId = `choice-${nextId++}`;
           const choiceNode = createChoiceNode(choiceId, {
             x: (sourceNode.position.x + targetNode.position.x) / 2,
@@ -265,7 +287,7 @@ export const useFlowStore = create<FlowStore>()(
           type: "scene",
           position: snapPositionToGrid({ x: 250, y: 250 }),
           data: { label: "Start", durationSec: 5 }
-        }],
+        } as SceneNode],
         edges: [],
         selectedNodeId: null
       })
@@ -280,10 +302,3 @@ export const useFlowStore = create<FlowStore>()(
     }
   )
 );
-
-// Helper functions
-export const isSceneNode = (node: StoryNode): node is SceneNode => 
-  node.type === "scene";
-
-export const isChoiceNode = (node: StoryNode): node is ChoiceNode => 
-  node.type === "choice";
