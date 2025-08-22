@@ -9,19 +9,27 @@ import {
   EdgeChange,
 } from "@xyflow/react";
 
+// WAŻNE: Importujemy WSZYSTKO z types.ts, łącznie z type guards
+import { 
+  StoryNode, 
+  SceneNode, 
+  ChoiceNode, 
+  StoryEdge,
+  SceneNodeData,
+  ChoiceNodeData,
+  isSceneNode,
+  isChoiceNode 
+} from "./types";
+
 import { blockSnippets } from "./blockSnippets";
 import { snapPositionToGrid } from "./gridHelpers";
-import { StoryNode } from ".";
-import { ChoiceNode, ChoiceNodeData, SceneNode, SceneNodeData, StoryEdge } from "./types";
 
 // Type-safe wrappers
 const applyNodeChanges = (
   changes: NodeChange[],
   nodes: StoryNode[]
 ): StoryNode[] => {
-  const genericNodes = nodes as Array<SceneNode | ChoiceNode>;
-  const result = applyNodeChangesRF(changes, genericNodes);
-  return result as StoryNode[];
+  return applyNodeChangesRF(changes, nodes) as StoryNode[];
 };
 
 const applyEdgeChanges = (

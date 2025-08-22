@@ -1,13 +1,15 @@
 // src/modules/flow/types.ts
-import { Node, Edge, NodeChange, EdgeChange } from "@xyflow/react";
-import { Condition } from "@/modules/variables";
+// WSZYSTKIE TYPY I TYPE GUARDY W JEDNYM MIEJSCU - BEZ CIRCULAR DEPENDENCIES
+import { Node, Edge } from "@xyflow/react";
+import { Condition } from "@/modules/variables/types";
 
-// Flow-specific types only
-export interface SceneNodeData extends Record<string, unknown> {
+// ============= DATA TYPES =============
+// Używamy type zamiast interface dla kompatybilności z ReactFlow v12
+export type SceneNodeData = {
   label: string;
   description?: string;
   durationSec: number;
-  condition?: Condition;  // Import from variables module
+  condition?: Condition;
   defaultChoiceId?: string;
   videoSegmentId?: string;
   // Runtime state
@@ -17,7 +19,7 @@ export interface SceneNodeData extends Record<string, unknown> {
   hasCondition?: boolean;
 }
 
-export interface ChoiceNodeData extends Record<string, unknown> {
+export type ChoiceNodeData = {
   label: string;
   effects: Record<string, number>;
   // Runtime state
@@ -26,18 +28,18 @@ export interface ChoiceNodeData extends Record<string, unknown> {
   id?: string;
 }
 
-// Node Types
+// ============= NODE TYPES =============
 export type SceneNode = Node<SceneNodeData, "scene">;
 export type ChoiceNode = Node<ChoiceNodeData, "choice">;
 export type StoryNode = SceneNode | ChoiceNode;
+
+// ============= EDGE TYPE =============
 export type StoryEdge = Edge;
 
-// Type Guards
+// ============= TYPE GUARDS =============
+// WAŻNE: Type guardy MUSZĄ być w tym samym pliku co typy
 export const isSceneNode = (node: StoryNode): node is SceneNode => 
   node.type === "scene";
+
 export const isChoiceNode = (node: StoryNode): node is ChoiceNode => 
   node.type === "choice";
-
-// React Flow Helpers
-export type StoryNodeChange = NodeChange;
-export type StoryEdgeChange = EdgeChange;
