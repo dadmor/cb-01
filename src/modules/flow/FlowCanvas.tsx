@@ -15,7 +15,7 @@ import "@xyflow/react/dist/style.css";
 
 import { SceneNode } from "./nodes/SceneNode";
 import { ChoiceNode } from "./nodes/ChoiceNode";
-import { useFlowStore, useNodes, useEdges } from "./store";
+import { useFlowStore, useNodes, useEdges, useSelectedNodeId } from "./store";
 import { useGameStore } from "@/modules/game/store";
 import { useVideoStore } from "@/modules/video/store";
 import { VariablesManager } from "@/modules/variables";
@@ -39,13 +39,32 @@ const defaultEdgeOptions = {
   markerEnd: 'arrow',
   style: {
     strokeWidth: 2,
-    stroke: '#6b7280',
+    stroke: '#52525b', // zinc-600
   }
 };
 
 // Custom edge style for locked paths
-const getEdgeStyle = (edge: Edge, nodes: StoryNode[], variables: any, mode: "edit" | "play") => {
+const getEdgeStyle = (edge: Edge, nodes: StoryNode[], variables: any, mode: "edit" | "play", selectedNodeId: string | null) => {
   const targetNode = nodes.find(n => n.id === edge.target);
+  
+  // Check if this edge is connected to selected choice node
+  const isSelectedChoice = selectedNodeId && (
+    edge.source === selectedNodeId || edge.target === selectedNodeId
+  ) && nodes.find(n => n.id === selectedNodeId && isChoiceNode(n));
+  
+  if (isSelectedChoice) {
+    return {
+      ...defaultEdgeOptions,
+      style: {
+        strokeWidth: 3,
+        stroke: '#dc2626', // red-600 color for selected
+      },
+      markerEnd: {
+        type: 'arrow' as const,
+        color: '#dc2626'
+      }
+    };
+  }
   
   if (targetNode && isSceneNode(targetNode) && targetNode.data.condition) {
     const isLocked = mode === "play" ? !VariablesManager.evaluate(variables, targetNode.data.condition) : false;
@@ -75,6 +94,7 @@ export const FlowCanvas: React.FC = React.memo(() => {
   // Use optimized selectors
   const nodes = useNodes();
   const edges = useEdges();
+  const selectedNodeId = useSelectedNodeId();
   const onNodesChange = useFlowStore(state => state.onNodesChange);
   const onEdgesChange = useFlowStore(state => state.onEdgesChange);
   const createChoice = useFlowStore(state => state.createChoice);
@@ -181,9 +201,9 @@ export const FlowCanvas: React.FC = React.memo(() => {
   const enrichedEdges = useMemo(() => {
     return edges.map(edge => ({
       ...edge,
-      ...getEdgeStyle(edge, nodes, variables, mode)
+      ...getEdgeStyle(edge, nodes, variables, mode, selectedNodeId)
     }));
-  }, [edges, nodes, variables, mode]);
+  }, [edges, nodes, variables, mode, selectedNodeId]);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -310,13 +330,32 @@ export const FlowCanvas: React.FC = React.memo(() => {
 
   const onSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
-      if (mode === "edit" && params.nodes.length > 0) {
-        selectNode(params.nodes[0].id);
-      } else if (mode === "edit") {
-        selectNode(null);
+      if (mode === "edit") {
+        // Handle node selection
+        if (params.nodes.length > 0) {
+          selectNode(params.nodes[0].id);
+        } 
+        // Handle edge selection - select the choice node
+        else if (params.edges.length > 0) {
+          const edge = params.edges[0];
+          // Find if this edge is connected to a choice node
+          const sourceNode = nodes.find(n => n.id === edge.source);
+          const targetNode = nodes.find(n => n.id === edge.target);
+          
+          if (sourceNode && isChoiceNode(sourceNode)) {
+            selectNode(sourceNode.id);
+          } else if (targetNode && isChoiceNode(targetNode)) {
+            selectNode(targetNode.id);
+          } else {
+            selectNode(null);
+          }
+        } 
+        else {
+          selectNode(null);
+        }
       }
     },
-    [mode, selectNode]
+    [mode, selectNode, nodes]
   );
 
   const onPaneClick = useCallback(() => {
@@ -355,7 +394,7 @@ export const FlowCanvas: React.FC = React.memo(() => {
       defaultEdgeOptions={defaultEdgeOptions}
       deleteKeyCode={null}
       snapToGrid={true}
-      snapGrid={[10, 10]}
+      snapGrid={[20, 20]}
       fitView
     >
       <Controls />
