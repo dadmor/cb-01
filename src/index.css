@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import React Flow styles */
+/* Import React Flow styles - ZMIENIONA ŚCIEŻKA */
 @import '@xyflow/react/dist/style.css';
 
 /* Scrollbar styles */

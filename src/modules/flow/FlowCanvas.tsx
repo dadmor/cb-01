@@ -1,17 +1,17 @@
 // src/modules/flow/FlowCanvas.tsx
 import React, { useCallback, useMemo, useRef, useEffect } from "react";
-import ReactFlow, {
+import {
+  ReactFlow,
   MiniMap,
   Controls,
   Background,
   ConnectionLineType,
   NodeTypes,
   OnConnect,
-  Node,
   Edge,
   OnSelectionChangeParams,
-} from "reactflow";
-import "reactflow/dist/style.css";
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 
 import { SceneNode } from "./nodes/SceneNode";
 import { ChoiceNode } from "./nodes/ChoiceNode";

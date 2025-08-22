@@ -8,7 +8,7 @@ import {
   applyEdgeChanges as applyEdgeChangesRF,
   NodeChange,
   EdgeChange,
-} from "reactflow";
+} from "@xyflow/react";
 import {
   StoryNode,
   StoryEdge,

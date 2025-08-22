@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { ReactFlowProvider } from "reactflow";
+import { ReactFlowProvider } from "@xyflow/react";
 import { FlowCanvas } from "@/modules/flow/FlowCanvas";
 import { VideoTimeline } from "@/modules/video/VideoTimeline";
 import { Sidebar } from "@/components/Sidebar";
@@ -11,7 +11,19 @@ import { useVideoStore, cleanupVideo } from "@/modules/video/store";
 import { ProjectData } from "@/types";
 import { VideoReloadModal } from "./modules/video/VideoReloadModal";
 
-// DaVinci-style icons
+// Lucide icons
+import { 
+  Grid3x3, 
+  Layers, 
+  Palette, 
+  Package, 
+  Home, 
+  Settings,
+  Video,
+  Grip
+} from "lucide-react";
+
+// DaVinci-style logo
 const DaVinciLogo = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
     <rect width="32" height="32" fill="#E84E36"/>
@@ -20,41 +32,10 @@ const DaVinciLogo = () => (
   </svg>
 );
 
-const MediaPoolIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-    <rect x="2" y="3" width="6" height="6" rx="1"/>
-    <rect x="10" y="3" width="6" height="6" rx="1"/>
-    <rect x="2" y="11" width="6" height="6" rx="1"/>
-    <rect x="10" y="11" width="6" height="6" rx="1"/>
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-    <path d="M3 5h14v2H3V5zm0 4h10v2H3V9zm0 4h14v2H3v-2z"/>
-  </svg>
-);
-
-const ColorIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none"/>
-    <circle cx="10" cy="6" r="2"/>
-    <circle cx="14" cy="10" r="2"/>
-    <circle cx="10" cy="14" r="2"/>
-    <circle cx="6" cy="10" r="2"/>
-  </svg>
-);
-
-const DeliverIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-    <path d="M10 2l8 8-8 8-8-8 8-8zm0 3.5L5.5 10 10 14.5 14.5 10 10 5.5z"/>
-  </svg>
-);
-
 export default function App() {
   const [projectTitle, setProjectTitle] = useState("Untitled Project");
   const [showVideoReloadModal, setShowVideoReloadModal] = useState(false);
-  const [activeTab, setActiveTab] = useState("edit"); // media, edit, color, deliver
+  const [activeTab, setActiveTab] = useState("edit");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,16 +141,12 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="h-screen flex flex-col" style={{ backgroundColor: '#1a1a1a' }}>
+      <div className="h-screen flex flex-col bg-[#1a1a1a]">
         {/* DaVinci-style Header */}
-        <header className="flex-shrink-0" style={{ 
-          height: '40px',
-          background: 'linear-gradient(to bottom, #2a2a2a, #242424)',
-          borderBottom: '1px solid #0a0a0a'
-        }}>
+        <header className="flex-shrink-0 h-10 bg-gradient-to-b from-[#2a2a2a] to-[#242424] border-b border-[#0a0a0a]">
           <div className="h-full flex items-center">
             {/* Logo */}
-            <div className="px-3 h-full flex items-center" style={{ borderRight: '1px solid #0a0a0a' }}>
+            <div className="px-3 h-full flex items-center border-r border-[#0a0a0a]">
               <DaVinciLogo />
             </div>
 
@@ -178,8 +155,7 @@ export default function App() {
               {['File', 'Edit', 'Timeline', 'Workspace', 'Help'].map((menu) => (
                 <button
                   key={menu}
-                  className="px-4 h-full hover:bg-white/5 text-sm"
-                  style={{ color: '#999' }}
+                  className="px-4 h-full hover:bg-white/5 text-sm text-[#999]"
                 >
                   {menu}
                 </button>
@@ -193,59 +169,41 @@ export default function App() {
                 value={projectTitle}
                 onChange={(e) => setProjectTitle(e.target.value)}
                 disabled={mode === "play"}
-                className="bg-transparent text-center font-medium"
-                style={{ 
-                  color: '#ccc',
-                  fontSize: '13px',
-                  outline: 'none',
-                  border: 'none'
-                }}
+                className="bg-transparent text-center font-medium text-[#ccc] text-[13px] outline-none border-none"
               />
             </div>
 
             {/* Right side controls */}
             <div className="flex items-center gap-2 px-3">
               <button className="p-1.5 hover:bg-white/5 rounded">
-                <svg width="16" height="16" fill="#999" viewBox="0 0 20 20">
-                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-                </svg>
+                <Home className="w-4 h-4 text-[#999]" />
               </button>
               <button className="p-1.5 hover:bg-white/5 rounded">
-                <svg width="16" height="16" fill="#999" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"/>
-                </svg>
+                <Settings className="w-4 h-4 text-[#999]" />
               </button>
             </div>
           </div>
         </header>
 
         {/* Tab Navigation */}
-        <div style={{ 
-          height: '48px',
-          backgroundColor: '#282828',
-          borderBottom: '1px solid #0a0a0a',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
+        <div className="h-12 bg-[#282828] border-b border-[#0a0a0a] flex items-center">
           <div className="flex h-full">
             {[
-              { id: 'media', label: 'Media', icon: <MediaPoolIcon /> },
-              { id: 'edit', label: 'Edit', icon: <EditIcon /> },
-              { id: 'color', label: 'Color', icon: <ColorIcon /> },
-              { id: 'deliver', label: 'Deliver', icon: <DeliverIcon /> }
+              { id: 'media', label: 'Media', icon: Grid3x3 },
+              { id: 'edit', label: 'Edit', icon: Layers },
+              { id: 'color', label: 'Color', icon: Palette },
+              { id: 'deliver', label: 'Deliver', icon: Package }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className="h-full px-8 flex items-center gap-3 transition-all"
-                style={{
-                  backgroundColor: activeTab === tab.id ? '#1a1a1a' : 'transparent',
-                  color: activeTab === tab.id ? '#E84E36' : '#666',
-                  borderBottom: activeTab === tab.id ? '2px solid #E84E36' : '2px solid transparent',
-                  borderRight: '1px solid #0a0a0a'
-                }}
+                className={`h-full px-8 flex items-center gap-3 transition-all border-r border-[#0a0a0a] ${
+                  activeTab === tab.id 
+                    ? 'bg-[#1a1a1a] text-[#E84E36] border-b-2 border-b-[#E84E36]' 
+                    : 'bg-transparent text-[#666] border-b-2 border-b-transparent'
+                }`}
               >
-                {tab.icon}
+                <tab.icon className="w-5 h-5" />
                 <span className="font-medium text-sm">{tab.label}</span>
               </button>
             ))}
@@ -255,12 +213,7 @@ export default function App() {
           <div className="flex-1 flex items-center justify-end px-4 gap-2">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{
-                backgroundColor: '#2a2a2a',
-                color: '#999',
-                border: '1px solid #3a3a3a'
-              }}
+              className="px-3 py-1.5 text-xs font-medium bg-[#2a2a2a] text-[#999] border border-[#3a3a3a] transition-colors hover:bg-[#333] hover:text-white"
             >
               Import Project
             </button>
@@ -274,30 +227,22 @@ export default function App() {
             
             <button
               onClick={handleExport}
-              className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{
-                backgroundColor: '#2a2a2a',
-                color: '#999',
-                border: '1px solid #3a3a3a'
-              }}
+              className="px-3 py-1.5 text-xs font-medium bg-[#2a2a2a] text-[#999] border border-[#3a3a3a] transition-colors hover:bg-[#333] hover:text-white"
             >
               Export Project
             </button>
 
-            <div style={{ width: '1px', height: '20px', backgroundColor: '#3a3a3a', margin: '0 8px' }} />
+            <div className="w-px h-5 bg-[#3a3a3a] mx-2" />
 
             <button
               onClick={() => videoInputRef.current?.click()}
-              className="px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-2"
-              style={{
-                backgroundColor: videoFile ? '#2d3a2d' : '#2a2a2a',
-                color: videoFile ? '#4ade80' : '#999',
-                border: '1px solid #3a3a3a'
-              }}
+              className={`px-3 py-1.5 text-xs font-medium border border-[#3a3a3a] transition-colors flex items-center gap-2 ${
+                videoFile 
+                  ? 'bg-[#2d3a2d] text-green-400 hover:bg-[#3a4a3a]' 
+                  : 'bg-[#2a2a2a] text-[#999] hover:bg-[#333] hover:text-white'
+              }`}
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
-              </svg>
+              <Video className="w-4 h-4" />
               {videoFile ? videoFile.name : "Import Media"}
             </button>
             <input
@@ -313,24 +258,9 @@ export default function App() {
         {/* Main workspace */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Media Pool / Regions */}
-          <div style={{ 
-            width: '300px',
-            backgroundColor: '#1e1e1e',
-            borderRight: '1px solid #0a0a0a',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <div style={{
-              height: '32px',
-              backgroundColor: '#252525',
-              borderBottom: '1px solid #0a0a0a',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 12px'
-            }}>
-              <span style={{ fontSize: '12px', color: '#999', fontWeight: 500 }}>
-                MEDIA POOL
-              </span>
+          <div className="w-[300px] bg-[#1e1e1e] border-r border-[#0a0a0a] flex flex-col">
+            <div className="h-8 bg-[#252525] border-b border-[#0a0a0a] flex items-center px-3">
+              <span className="text-xs text-[#999] font-medium">MEDIA POOL</span>
             </div>
             
             {videoFile ? (
@@ -338,18 +268,11 @@ export default function App() {
             ) : (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <svg className="w-16 h-16 mx-auto mb-3" fill="#444" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/>
-                  </svg>
-                  <p style={{ color: '#666', fontSize: '13px' }}>No media imported</p>
+                  <Video className="w-16 h-16 mx-auto mb-3 text-[#444]" />
+                  <p className="text-[#666] text-[13px]">No media imported</p>
                   <button
                     onClick={() => videoInputRef.current?.click()}
-                    className="mt-3 px-4 py-2 text-xs"
-                    style={{
-                      backgroundColor: '#E84E36',
-                      color: 'white',
-                      fontWeight: 500
-                    }}
+                    className="mt-3 px-4 py-2 text-xs bg-[#E84E36] text-white font-medium hover:bg-[#d63d2a] transition-colors"
                   >
                     Import Media Files
                   </button>
@@ -359,27 +282,14 @@ export default function App() {
           </div>
 
           {/* Center - Main Canvas */}
-          <div className="flex-1 flex flex-col" style={{ backgroundColor: '#1a1a1a' }}>
+          <div className="flex-1 flex flex-col bg-[#1a1a1a]">
             {/* Viewer/Canvas area */}
             <div className="flex-1 relative">
               <FlowCanvas />
               
               {/* Viewer overlay controls */}
-              <div style={{
-                position: 'absolute',
-                top: '8px',
-                right: '8px',
-                display: 'flex',
-                gap: '4px'
-              }}>
-                <button
-                  className="p-2"
-                  style={{
-                    backgroundColor: 'rgba(0,0,0,0.6)',
-                    color: '#999',
-                    fontSize: '11px'
-                  }}
-                >
+              <div className="absolute top-2 right-2 flex gap-1">
+                <button className="p-2 bg-black/60 text-[#999] text-[11px] hover:bg-black/80 transition-colors">
                   Viewer
                 </button>
               </div>
@@ -387,22 +297,9 @@ export default function App() {
           </div>
 
           {/* Right Panel - Inspector */}
-          <div style={{ 
-            width: '350px',
-            backgroundColor: '#1e1e1e',
-            borderLeft: '1px solid #0a0a0a'
-          }}>
-            <div style={{
-              height: '32px',
-              backgroundColor: '#252525',
-              borderBottom: '1px solid #0a0a0a',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 12px'
-            }}>
-              <span style={{ fontSize: '12px', color: '#999', fontWeight: 500 }}>
-                INSPECTOR
-              </span>
+          <div className="w-[350px] bg-[#1e1e1e] border-l border-[#0a0a0a]">
+            <div className="h-8 bg-[#252525] border-b border-[#0a0a0a] flex items-center px-3">
+              <span className="text-xs text-[#999] font-medium">INSPECTOR</span>
             </div>
             <Sidebar />
           </div>
@@ -410,58 +307,28 @@ export default function App() {
 
         {/* Timeline Panel */}
         {videoFile && (
-          <div style={{ 
-            height: '280px',
-            backgroundColor: '#1a1a1a',
-            borderTop: '1px solid #0a0a0a',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
+          <div className="h-[280px] bg-[#1a1a1a] border-t border-[#0a0a0a] flex flex-col">
             {/* Timeline toolbar */}
-            <div style={{
-              height: '32px',
-              backgroundColor: '#252525',
-              borderBottom: '1px solid #0a0a0a',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 12px',
-              gap: '16px'
-            }}>
-              <span style={{ fontSize: '12px', color: '#999', fontWeight: 500 }}>
-                TIMELINE
-              </span>
+            <div className="h-8 bg-[#252525] border-b border-[#0a0a0a] flex items-center px-3 gap-4">
+              <span className="text-xs text-[#999] font-medium">TIMELINE</span>
               
               {/* Timeline tools */}
               <div className="flex gap-1">
                 {['A', 'B', 'N', 'M'].map((tool) => (
                   <button
                     key={tool}
-                    className="w-6 h-6 flex items-center justify-center hover:bg-white/10"
-                    style={{
-                      backgroundColor: '#2a2a2a',
-                      color: '#666',
-                      fontSize: '11px',
-                      fontWeight: 'bold'
-                    }}
+                    className="w-6 h-6 flex items-center justify-center bg-[#2a2a2a] text-[#666] text-[11px] font-bold hover:bg-white/10 transition-colors"
                   >
                     {tool}
                   </button>
                 ))}
               </div>
 
-              <div style={{ width: '1px', height: '16px', backgroundColor: '#3a3a3a' }} />
+              <div className="w-px h-4 bg-[#3a3a3a]" />
 
               {/* Snap toggle */}
-              <button
-                className="px-2 py-1 text-xs flex items-center gap-1"
-                style={{
-                  backgroundColor: '#2a2a2a',
-                  color: '#666'
-                }}
-              >
-                <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
-                </svg>
+              <button className="px-2 py-1 text-xs bg-[#2a2a2a] text-[#666] flex items-center gap-1 hover:bg-[#333] transition-colors">
+                <Grip className="w-3 h-3" />
                 Snap
               </button>
             </div>

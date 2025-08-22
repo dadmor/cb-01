@@ -1,4 +1,4 @@
-import { Node, Edge, NodeChange, EdgeChange } from "reactflow";
+import { Node, Edge, NodeChange, EdgeChange } from "@xyflow/react";
 
 // Core domain types
 export interface Variable {
@@ -38,6 +38,7 @@ export interface SceneNodeData {
   isUnlocked?: boolean;
   isCurrent?: boolean;
   remainingMs?: number;
+  hasCondition?: boolean; // Add this for edit mode display
 }
 
 export interface ChoiceNodeData {
@@ -46,6 +47,7 @@ export interface ChoiceNodeData {
   // Runtime state - only present during play mode
   isAvailable?: boolean;
   onClick?: () => void;
+  id?: string; // Add this for internal use
 }
 
 export type SceneNode = Node<SceneNodeData, "scene">;

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Handle, Position } from "reactflow";
+import { Handle, Position } from "@xyflow/react";
 import { ChoiceNodeData } from "@/types";
 import { useGameStore } from "@/modules/game/store";
 import { useFlowStore } from "@/modules/flow/store";
