@@ -45,6 +45,22 @@ interface AppState {
 export const START_NODE_ID = "scene-1";
 let nextId = 2;
 
+// === HELPERY DO ID ===
+const extractNumericSuffix = (id: string): number | null => {
+  // obsługujemy id w stylu "scene-12" albo "choice-7"
+  const m = id.match(/-(\d+)$/);
+  return m ? parseInt(m[1], 10) : null;
+};
+
+const recomputeNextId = (nodes: StoryNode[]) => {
+  const maxNum = nodes
+    .map(n => extractNumericSuffix(n.id))
+    .filter((n): n is number => Number.isFinite(n))
+    .reduce((a, b) => Math.max(a, b), 1);
+  nextId = Math.max(2, maxNum + 1);
+};
+
+// === DOMYŚLNE ZMIENNE ===
 const DEFAULT_VARIABLES: Variable[] = [
   { name: "health", value: 10, initialValue: 10 },
   { name: "energy", value: 5, initialValue: 5 },
@@ -183,8 +199,12 @@ export const useAppStore = create<AppState>()(
             });
           }
 
+          const newNodes = state.nodes.filter((n) => !nodesToDelete.includes(n.id));
+          // po usunięciu przelicz nextId, żeby uniknąć kolizji po „cofnięciu” długości listy
+          recomputeNextId(newNodes);
+
           return {
-            nodes: state.nodes.filter((n) => !nodesToDelete.includes(n.id)),
+            nodes: newNodes,
             edges: state.edges.filter((e) => !edgesToDelete.has(e.id)),
             selectedNodeId: nodesToDelete.includes(state.selectedNodeId || "")
               ? null
@@ -195,12 +215,15 @@ export const useAppStore = create<AppState>()(
       
       addSceneNode: () =>
         set((state) => {
+          // Spróbuj umieścić nową scenę „pod najniżej” położoną sceną
+          const maxY =
+            state.nodes.reduce((acc, n) => Math.max(acc, n.position.y), 250);
           const newNode: SceneNode = {
             id: `scene-${nextId++}`,
             type: "scene",
             position: snapPositionToGrid({
               x: 400,
-              y: 250 + state.nodes.length * 100,
+              y: maxY + 100,
             }),
             data: {
               label: `Scene ${nextId - 1}`,
@@ -247,14 +270,18 @@ export const useAppStore = create<AppState>()(
       },
 
       // Project
-      loadProject: (nodes, edges) =>
+      loadProject: (nodes, edges) => {
+        // ustaw najpierw nextId na podstawie importu
+        recomputeNextId(nodes);
         set({
           nodes,
           edges,
           selectedNodeId: null,
-        }),
+        });
+      },
           
-      clearProject: () =>
+      clearProject: () => {
+        nextId = 2; // reset licznika przy czyszczeniu
         set({
           nodes: [
             {
@@ -267,7 +294,8 @@ export const useAppStore = create<AppState>()(
           edges: [],
           selectedNodeId: null,
           variables: DEFAULT_VARIABLES,
-        }),
+        });
+      },
     }),
     {
       name: "app-storage",
@@ -276,6 +304,12 @@ export const useAppStore = create<AppState>()(
         edges: state.edges,
         variables: state.variables,
       }),
+      // Kluczowe: po rehydratacji z localStorage przelicz nextId na podstawie istniejących węzłów
+      onRehydrateStorage: () => (state) => {
+        if (state?.nodes) {
+          recomputeNextId(state.nodes);
+        }
+      },
     }
   )
 );
