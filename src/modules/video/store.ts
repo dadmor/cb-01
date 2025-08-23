@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { VideoSegment } from "@/types";
-import { VideoStorageService } from "@/services/VideoStorageService";
+import { VideoStorageService } from "./services/VideoStorageService";
+import { VideoSegment } from "./types";
+
 
 interface VideoMetadata {
   fileName: string;

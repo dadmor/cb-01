@@ -1,9 +1,7 @@
-// ===== PLIK 3: src/modules/project/services/projectService.ts =====
+// src/modules/project/services/projectService.ts
 import { ProjectData, ProjectMetadata } from '../types';
-import { useFlowStore } from '@/modules/flow/store';
-import { useVariablesStore } from '@/modules/variables/stores/variablesStore';
+import { useAppStore } from '@/store/useAppStore';
 import { useVideoStore } from '@/modules/video/store';
-import { GameService } from '@/modules/game';
 
 export class ProjectService {
   private static readonly CURRENT_VERSION = '1.0.0';
@@ -14,8 +12,7 @@ export class ProjectService {
    * Eksportuj aktualny stan projektu do JSON
    */
   static exportProject(title: string): ProjectData {
-    const { nodes, edges } = useFlowStore.getState();
-    const { variables } = useVariablesStore.getState();
+    const { nodes, edges, variables } = useAppStore.getState();
     const { segments } = useVideoStore.getState();
 
     const projectData: ProjectData = {
@@ -55,14 +52,14 @@ export class ProjectService {
     this.validateProjectData(projectData);
 
     // Zatrzymaj grę jeśli działa
-    GameService.stopGame();
+    useAppStore.getState().stopGame();
 
-    // Załaduj dane flow
-    const { loadProject } = useFlowStore.getState();
+    // Załaduj dane do nowego store
+    const { loadProject } = useAppStore.getState();
     loadProject(projectData.nodes, projectData.edges);
 
     // Załaduj zmienne
-    useVariablesStore.setState({ variables: projectData.variables });
+    useAppStore.setState({ variables: projectData.variables });
 
     // Załaduj segmenty wideo
     if (projectData.videoSegments) {
@@ -96,21 +93,11 @@ export class ProjectService {
    * Utwórz nowy pusty projekt
    */
   static createNewProject(): void {
-    const { clearProject } = useFlowStore.getState();
+    const { clearProject } = useAppStore.getState();
     const { clearVideo } = useVideoStore.getState();
     
     clearProject();
     clearVideo();
-    GameService.stopGame();
-    
-    // Resetuj zmienne do wartości początkowych
-    const { variables } = useVariablesStore.getState();
-    useVariablesStore.setState({ 
-      variables: variables.map(v => ({
-        ...v,
-        value: v.initialValue
-      }))
-    });
   }
 
   /**

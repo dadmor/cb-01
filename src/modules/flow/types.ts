@@ -1,10 +1,8 @@
 // src/modules/flow/types.ts
-// WSZYSTKIE TYPY I TYPE GUARDY W JEDNYM MIEJSCU - BEZ CIRCULAR DEPENDENCIES
 import { Node, Edge } from "@xyflow/react";
 import { Condition } from "@/modules/variables/types";
 
 // ============= DATA TYPES =============
-// Używamy type zamiast interface dla kompatybilności z ReactFlow v12
 export type SceneNodeData = {
   label: string;
   description?: string;
@@ -33,10 +31,10 @@ export type SceneNode = Node<SceneNodeData, "scene">;
 export type ChoiceNode = Node<ChoiceNodeData, "choice">;
 export type StoryNode = SceneNode | ChoiceNode;
 
-
+// ============= EDGE TYPE =============
+export type StoryEdge = Edge;
 
 // ============= TYPE GUARDS =============
-// WAŻNE: Type guardy MUSZĄ być w tym samym pliku co typy
 export const isSceneNode = (node: StoryNode): node is SceneNode => 
   node.type === "scene";
 
