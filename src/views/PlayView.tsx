@@ -87,15 +87,19 @@ export const PlayView: React.FC = () => {
     goTo(nextScene.id);
   };
 
-  // —— WAŻNE: czyścimy wszystkie stany zaznaczeń i wyłączamy możliwość selekcji ——
+  // tylko bieżąca scena ma selected = true (pomarańczowa ramka), reszta off
   const cleanNodes = React.useMemo(
     () =>
       nodes.map((n) => ({
         ...n,
-        selected: false,
+        selected: n.id === currentSceneId,
         draggable: false,
+        data: {
+          ...n.data,
+          isCurrent: n.id === currentSceneId,
+        },
       })),
-    [nodes]
+    [nodes, currentSceneId]
   );
 
   const cleanEdges = React.useMemo(
@@ -121,7 +125,7 @@ export const PlayView: React.FC = () => {
           elementsSelectable={false}
           selectNodesOnDrag={false}
           selectionOnDrag={false}
-          selectionKeyCode={null as unknown as string} // wyłącza selekcję klawiaturą
+          selectionKeyCode={null as unknown as string}
           panOnDrag={true}
           zoomOnScroll={true}
           zoomOnPinch={true}
