@@ -87,18 +87,41 @@ export const PlayView: React.FC = () => {
     goTo(nextScene.id);
   };
 
+  // —— WAŻNE: czyścimy wszystkie stany zaznaczeń i wyłączamy możliwość selekcji ——
+  const cleanNodes = React.useMemo(
+    () =>
+      nodes.map((n) => ({
+        ...n,
+        selected: false,
+        draggable: false,
+      })),
+    [nodes]
+  );
+
+  const cleanEdges = React.useMemo(
+    () =>
+      edges.map((e) => ({
+        ...e,
+        selected: false,
+      })),
+    [edges]
+  );
+
   return (
     <div className="h-full flex">
       <div className="flex-1 relative">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={cleanNodes}
+          edges={cleanEdges}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
           connectionLineType={ConnectionLineType.SmoothStep}
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={false}
+          selectNodesOnDrag={false}
+          selectionOnDrag={false}
+          selectionKeyCode={null as unknown as string} // wyłącza selekcję klawiaturą
           panOnDrag={true}
           zoomOnScroll={true}
           zoomOnPinch={true}
