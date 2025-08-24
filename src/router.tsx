@@ -6,8 +6,8 @@ import { ProjectsView } from "@/views/ProjectsView";
 import { VideoView } from "@/views/VideoView";
 import { StoryView } from "@/views/StoryView";
 import { DecisionsView } from "@/views/DecisionsView";
-import { VariablesView } from "@/views/VariablesView";
 import { PlayView } from "@/views/PlayView";
+import { VariablesView } from "@/views/VariablesView";
 
 export const router = createBrowserRouter([
   {
