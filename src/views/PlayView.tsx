@@ -16,7 +16,7 @@ import { SceneNode } from "@/modules/flow/nodes/SceneNode";
 import { ChoiceNode } from "@/modules/flow/nodes/ChoiceNode";
 import { usePlayStore } from "@/modules/play/usePlayStore";
 import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
-import { evalCondition, applyEffects } from "@/modules/variables/logic";
+import { evalConditions, applyEffects } from "@/modules/variables/logic";
 
 const nodeTypes: NodeTypes = {
   scene: SceneNode,
@@ -80,7 +80,7 @@ export const PlayView: React.FC = () => {
     if (!choiceNode || !isChoiceNode(choiceNode)) return;
     const nextScene = getTargetSceneForChoice(choiceId);
     if (!nextScene) return;
-    const unlocked = evalCondition(nextScene.data.condition, variables);
+    const unlocked = evalConditions(nextScene.data.conditions, variables);
     if (!unlocked) return;
     const nextVars = applyEffects(choiceNode.data.effects || {}, variables);
     loadVariables(nextVars);
@@ -137,7 +137,7 @@ export const PlayView: React.FC = () => {
               {choices.map((c) => {
                 const target = getTargetSceneForChoice(c.id);
                 const unlocked =
-                  !!target && evalCondition(target.data.condition, variables);
+                  !!target && evalConditions(target.data.conditions, variables);
                 return (
                   <button
                     key={c.id}
