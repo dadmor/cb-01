@@ -7,7 +7,7 @@ export const ProjectsView: React.FC = () => {
     <div className="h-full bg-[#1a1a1a] flex items-center justify-center">
       <div className="text-center">
         <FolderOpen className="w-24 h-24 mx-auto mb-6 text-[#444]" />
-        <h1 className="text-2xl font-bold text-[#ccc] mb-2">Projects (MOCK YET)</h1>
+        <h1 className="text-2xl font-bold text-[#ccc] mb-2">Projects (MOCK VIEW)</h1>
         <p className="text-[#666] text-sm mb-8">
           TODO: Project management interface
         </p>
