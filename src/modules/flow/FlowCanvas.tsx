@@ -1,4 +1,6 @@
+// ============================================
 // src/modules/flow/FlowCanvas.tsx
+// ============================================
 import React, { useCallback, useMemo } from "react";
 import {
   ReactFlow,
@@ -16,19 +18,7 @@ import "@xyflow/react/dist/style.css";
 import { SceneNode } from "./nodes/SceneNode";
 import { ChoiceNode } from "./nodes/ChoiceNode";
 import { isChoiceNode } from "./types";
-
-// POJEDYNCZE IMPORTY - BEZ OBIEKTÓW!
-import { 
-  useNodes,
-  useEdges,
-  useSelectedNodeId,
-  useOnNodesChange,
-  useOnEdgesChange,
-  useCreateChoice,
-  useSelectNode,
-  useDeleteNode,
-  useAppStore
-} from "@/store/useAppStore";
+import { useFlowStore } from "./store/useFlowStore";
 
 // Node types
 const nodeTypes: NodeTypes = {
@@ -47,15 +37,15 @@ const defaultEdgeOptions = {
 };
 
 export const FlowCanvas: React.FC = React.memo(() => {
-  // Pojedyncze hooki
-  const nodes = useNodes();
-  const edges = useEdges();
-  const selectedNodeId = useSelectedNodeId();
-  const onNodesChange = useOnNodesChange();
-  const onEdgesChange = useOnEdgesChange();
-  const createChoice = useCreateChoice();
-  const selectNode = useSelectNode();
-  const deleteNode = useDeleteNode();
+  // Flow store hooks
+  const nodes = useFlowStore(state => state.nodes);
+  const edges = useFlowStore(state => state.edges);
+  const selectedNodeId = useFlowStore(state => state.selectedNodeId);
+  const onNodesChange = useFlowStore(state => state.onNodesChange);
+  const onEdgesChange = useFlowStore(state => state.onEdgesChange);
+  const createChoice = useFlowStore(state => state.createChoice);
+  const selectNode = useFlowStore(state => state.selectNode);
+  const deleteNode = useFlowStore(state => state.deleteNode);
 
   // Node map for quick lookup
   const nodeMap = useMemo(

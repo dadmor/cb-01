@@ -1,4 +1,4 @@
-// src/store/useAppStore.ts
+// src/modules/flow/store/useFlowStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
@@ -9,17 +9,25 @@ import {
   type Edge,
 } from "@xyflow/react";
 
-import type { StoryNode, SceneNode, ChoiceNode } from "@/modules/flow/types";
-import { isSceneNode, isChoiceNode } from "@/modules/flow/types";
-import type { Variable } from "@/modules/variables/types";
-import { snapPositionToGrid } from "@/modules/flow/gridHelpers";
+import type { StoryNode, SceneNode, ChoiceNode } from "../types";
+import { isSceneNode, isChoiceNode } from "../types";
+import { snapPositionToGrid } from "../gridHelpers";
 
-interface AppState {
+// UUID generator
+const generateId = (prefix: 'scene' | 'choice'): string => {
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 9);
+  return `${prefix}_${timestamp}_${randomStr}`;
+};
+
+// Stały ID dla węzła startowego
+export const START_NODE_ID = "scene_start";
+
+interface FlowState {
   // State
   nodes: StoryNode[];
   edges: Edge[];
   selectedNodeId: string | null;
-  variables: Variable[];
   
   // Actions
   onNodesChange: (changes: NodeChange[]) => void;
@@ -29,58 +37,37 @@ interface AppState {
   updateNode: (nodeId: string, data: any) => void;
   deleteNode: (nodeId: string) => void;
   addSceneNode: () => void;
-  updateVariable: (name: string, value: number) => void;
-  addVariable: (name: string) => void;
-  removeVariable: (name: string) => void;
   
   // Helpers
   getNode: (nodeId: string) => StoryNode | undefined;
   getChoicesForScene: (sceneId: string) => ChoiceNode[];
   
-  // Project
-  loadProject: (nodes: StoryNode[], edges: Edge[]) => void;
-  clearProject: () => void;
+  // Project management
+  loadNodes: (nodes: StoryNode[]) => void;
+  loadEdges: (edges: Edge[]) => void;
+  reset: () => void;
 }
 
-export const START_NODE_ID = "scene-1";
-let nextId = 2;
-
-// === HELPERY DO ID ===
-const extractNumericSuffix = (id: string): number | null => {
-  // obsługujemy id w stylu "scene-12" albo "choice-7"
-  const m = id.match(/-(\d+)$/);
-  return m ? parseInt(m[1], 10) : null;
-};
-
-const recomputeNextId = (nodes: StoryNode[]) => {
-  const maxNum = nodes
-    .map(n => extractNumericSuffix(n.id))
-    .filter((n): n is number => Number.isFinite(n))
-    .reduce((a, b) => Math.max(a, b), 1);
-  nextId = Math.max(2, maxNum + 1);
-};
-
-// === DOMYŚLNE ZMIENNE ===
-const DEFAULT_VARIABLES: Variable[] = [
-  { name: "health", value: 10, initialValue: 10 },
-  { name: "energy", value: 5, initialValue: 5 },
+const createInitialNodes = (): StoryNode[] => [
+  {
+    id: START_NODE_ID,
+    type: "scene",
+    position: snapPositionToGrid({ x: 250, y: 250 }),
+    data: { 
+      label: "Start", 
+      durationSec: 5,
+      isStart: true
+    },
+  } as SceneNode,
 ];
 
-export const useAppStore = create<AppState>()(
+export const useFlowStore = create<FlowState>()(
   persist(
     (set, get) => ({
       // Initial state
-      nodes: [
-        {
-          id: START_NODE_ID,
-          type: "scene",
-          position: snapPositionToGrid({ x: 250, y: 250 }),
-          data: { label: "Start", durationSec: 5 },
-        } as SceneNode,
-      ],
+      nodes: createInitialNodes(),
       edges: [],
       selectedNodeId: null,
-      variables: DEFAULT_VARIABLES,
 
       // React Flow handlers
       onNodesChange: (changes) =>
@@ -93,7 +80,6 @@ export const useAppStore = create<AppState>()(
           edges: applyEdgeChanges(changes, state.edges),
         })),
           
-      // Create connection
       createChoice: (sourceId, targetId) =>
         set((state) => {
           const sourceNode = state.nodes.find((n) => n.id === sourceId);
@@ -109,7 +95,7 @@ export const useAppStore = create<AppState>()(
 
           // Scene to scene: create choice node between
           if (isSceneNode(sourceNode) && isSceneNode(targetNode)) {
-            const choiceId = `choice-${nextId++}`;
+            const choiceId = generateId('choice');
             const choiceNode: ChoiceNode = {
               id: choiceId,
               type: "choice",
@@ -128,12 +114,12 @@ export const useAppStore = create<AppState>()(
               edges: [
                 ...state.edges,
                 {
-                  id: `${sourceId}-${choiceId}`,
+                  id: `edge_${sourceId}_${choiceId}`,
                   source: sourceId,
                   target: choiceId,
                 },
                 {
-                  id: `${choiceId}-${targetId}`,
+                  id: `edge_${choiceId}_${targetId}`,
                   source: choiceId,
                   target: targetId,
                 },
@@ -146,7 +132,11 @@ export const useAppStore = create<AppState>()(
             ...state,
             edges: [
               ...state.edges,
-              { id: `${sourceId}-${targetId}`, source: sourceId, target: targetId },
+              { 
+                id: `edge_${sourceId}_${targetId}`, 
+                source: sourceId, 
+                target: targetId 
+              },
             ],
           };
         }),
@@ -161,6 +151,7 @@ export const useAppStore = create<AppState>()(
         })),
           
       deleteNode: (nodeId) => {
+        // Nie pozwalamy usunąć węzła startowego
         if (nodeId === START_NODE_ID) return;
 
         set((state) => {
@@ -170,7 +161,7 @@ export const useAppStore = create<AppState>()(
           const nodesToDelete = [nodeId];
           const edgesToDelete = new Set<string>();
 
-          // Remove connected edges
+          // Find edges to delete
           state.edges.forEach((edge) => {
             if (edge.source === nodeId || edge.target === nodeId) {
               edgesToDelete.add(edge.id);
@@ -199,12 +190,8 @@ export const useAppStore = create<AppState>()(
             });
           }
 
-          const newNodes = state.nodes.filter((n) => !nodesToDelete.includes(n.id));
-          // po usunięciu przelicz nextId, żeby uniknąć kolizji po „cofnięciu” długości listy
-          recomputeNextId(newNodes);
-
           return {
-            nodes: newNodes,
+            nodes: state.nodes.filter((n) => !nodesToDelete.includes(n.id)),
             edges: state.edges.filter((e) => !edgesToDelete.has(e.id)),
             selectedNodeId: nodesToDelete.includes(state.selectedNodeId || "")
               ? null
@@ -215,48 +202,27 @@ export const useAppStore = create<AppState>()(
       
       addSceneNode: () =>
         set((state) => {
-          // Spróbuj umieścić nową scenę „pod najniżej” położoną sceną
-          const maxY =
-            state.nodes.reduce((acc, n) => Math.max(acc, n.position.y), 250);
+          // Find the lowest Y position to place new node below
+          const maxY = state.nodes.reduce((acc, n) => Math.max(acc, n.position.y), 250);
+          
           const newNode: SceneNode = {
-            id: `scene-${nextId++}`,
+            id: generateId('scene'),
             type: "scene",
             position: snapPositionToGrid({
               x: 400,
               y: maxY + 100,
             }),
             data: {
-              label: `Scene ${nextId - 1}`,
+              label: `Scene ${state.nodes.filter(n => n.type === 'scene').length}`,
               durationSec: 5,
             },
           };
+          
           return {
             nodes: [...state.nodes, newNode],
             selectedNodeId: newNode.id,
           };
         }),
-
-      // Variables
-      updateVariable: (name, value) =>
-        set((state) => ({
-          variables: state.variables.map((v) =>
-            v.name === name ? { ...v, value } : v
-          ),
-        })),
-        
-      addVariable: (name) =>
-        set((state) => ({
-          variables: [...state.variables, {
-            name,
-            value: 0,
-            initialValue: 0
-          }]
-        })),
-        
-      removeVariable: (name) =>
-        set((state) => ({
-          variables: state.variables.filter(v => v.name !== name)
-        })),
 
       // Helpers
       getNode: (nodeId) => get().nodes.find((n) => n.id === nodeId),
@@ -269,62 +235,22 @@ export const useAppStore = create<AppState>()(
           .filter((n): n is ChoiceNode => !!n && isChoiceNode(n));
       },
 
-      // Project
-      loadProject: (nodes, edges) => {
-        // ustaw najpierw nextId na podstawie importu
-        recomputeNextId(nodes);
-        set({
-          nodes,
-          edges,
-          selectedNodeId: null,
-        });
-      },
-          
-      clearProject: () => {
-        nextId = 2; // reset licznika przy czyszczeniu
-        set({
-          nodes: [
-            {
-              id: START_NODE_ID,
-              type: "scene",
-              position: snapPositionToGrid({ x: 250, y: 250 }),
-              data: { label: "Start", durationSec: 5 },
-            } as SceneNode,
-          ],
-          edges: [],
-          selectedNodeId: null,
-          variables: DEFAULT_VARIABLES,
-        });
-      },
+      // Project management
+      loadNodes: (nodes) => set({ nodes, selectedNodeId: null }),
+      loadEdges: (edges) => set({ edges }),
+      
+      reset: () => set({
+        nodes: createInitialNodes(),
+        edges: [],
+        selectedNodeId: null,
+      }),
     }),
     {
-      name: "app-storage",
+      name: "flow-storage",
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,
-        variables: state.variables,
       }),
-      // Kluczowe: po rehydratacji z localStorage przelicz nextId na podstawie istniejących węzłów
-      onRehydrateStorage: () => (state) => {
-        if (state?.nodes) {
-          recomputeNextId(state.nodes);
-        }
-      },
     }
   )
 );
-
-// POJEDYNCZE SELEKTORY - BEZ OBIEKTÓW!
-export const useNodes = () => useAppStore((state) => state.nodes);
-export const useEdges = () => useAppStore((state) => state.edges);
-export const useSelectedNodeId = () => useAppStore((state) => state.selectedNodeId);
-export const useVariables = () => useAppStore((state) => state.variables);
-
-export const useOnNodesChange = () => useAppStore((state) => state.onNodesChange);
-export const useOnEdgesChange = () => useAppStore((state) => state.onEdgesChange);
-export const useCreateChoice = () => useAppStore((state) => state.createChoice);
-export const useSelectNode = () => useAppStore((state) => state.selectNode);
-export const useUpdateNode = () => useAppStore((state) => state.updateNode);
-export const useDeleteNode = () => useAppStore((state) => state.deleteNode);
-export const useAddSceneNode = () => useAppStore((state) => state.addSceneNode);
-export const useGetChoicesForScene = () => useAppStore((state) => state.getChoicesForScene);

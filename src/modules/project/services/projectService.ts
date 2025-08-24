@@ -1,7 +1,6 @@
 // src/modules/project/services/projectService.ts
 import { ProjectData, ProjectMetadata } from '../types';
-import { useAppStore } from '@/store/useAppStore';
-import { useVideoStore } from '@/modules/video/store';
+import { useProjectStore } from '../store/useProjectStore';
 
 export class ProjectService {
   private static readonly CURRENT_VERSION = '1.0.0';
@@ -12,21 +11,7 @@ export class ProjectService {
    * Eksportuj aktualny stan projektu do JSON
    */
   static exportProject(title: string): ProjectData {
-    const { nodes, edges, variables } = useAppStore.getState();
-    const { segments } = useVideoStore.getState();
-
-    const projectData: ProjectData = {
-      title,
-      nodes,
-      edges,
-      variables,
-      videoSegments: segments,
-      version: this.CURRENT_VERSION,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    return projectData;
+    return useProjectStore.getState().exportProject();
   }
 
   /**
@@ -48,23 +33,8 @@ export class ProjectService {
    * Importuj projekt z danych JSON
    */
   static async importProject(projectData: ProjectData): Promise<void> {
-    // Waliduj dane projektu
     this.validateProjectData(projectData);
-
-    // Zatrzymaj grę jeśli działa
-    useAppStore.getState().stopGame();
-
-    // Załaduj dane do nowego store
-    const { loadProject } = useAppStore.getState();
-    loadProject(projectData.nodes, projectData.edges);
-
-    // Załaduj zmienne
-    useAppStore.setState({ variables: projectData.variables });
-
-    // Załaduj segmenty wideo
-    if (projectData.videoSegments) {
-      useVideoStore.getState().updateSegments(projectData.videoSegments);
-    }
+    useProjectStore.getState().importProject(projectData);
   }
 
   /**
@@ -93,11 +63,7 @@ export class ProjectService {
    * Utwórz nowy pusty projekt
    */
   static createNewProject(): void {
-    const { clearProject } = useAppStore.getState();
-    const { clearVideo } = useVideoStore.getState();
-    
-    clearProject();
-    clearVideo();
+    useProjectStore.getState().newProject();
   }
 
   /**
@@ -154,8 +120,7 @@ export class ProjectService {
       createdAt: projectData.createdAt || 'Nieznana',
       updatedAt: projectData.updatedAt || 'Nieznana',
       nodeCount: projectData.nodes.length,
-      edgeCount: projectData.edges.length,
-      hasVideo: projectData.videoSegments && projectData.videoSegments.length > 0
+      edgeCount: projectData.edges.length
     };
   }
 

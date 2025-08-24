@@ -1,45 +1,35 @@
+// ============================================
 // src/views/decisions/Sidebar.tsx
+// ============================================
 import React, { useMemo } from "react";
 import { isSceneNode, isChoiceNode } from "@/modules/flow/types";
 import { Plus, X } from 'lucide-react';
-import { 
-  useNodes,
-  useEdges,
-  useSelectedNodeId,
-  useVariables,
-  useUpdateNode,
-  useDeleteNode,
-  useSelectNode,
-  useAddSceneNode,
-  useAppStore,
-  START_NODE_ID
-} from "@/store/useAppStore";
+import { useFlowStore, START_NODE_ID } from "@/modules/flow/store/useFlowStore";
+import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
 
 export const Sidebar: React.FC = () => {
-  const nodes = useNodes();
-  const edges = useEdges();
-  const selectedNodeId = useSelectedNodeId();
-  const variables = useVariables();
+  const nodes = useFlowStore(state => state.nodes);
+  const edges = useFlowStore(state => state.edges);
+  const selectedNodeId = useFlowStore(state => state.selectedNodeId);
+  const updateNode = useFlowStore(state => state.updateNode);
+  const deleteNode = useFlowStore(state => state.deleteNode);
+  const selectNode = useFlowStore(state => state.selectNode);
+  const addSceneNode = useFlowStore(state => state.addSceneNode);
   
-  const updateNode = useUpdateNode();
-  const deleteNode = useDeleteNode();
-  const selectNode = useSelectNode();
-  const addSceneNode = useAddSceneNode();
+  const variables = useVariablesStore(state => state.variables);
+  const addVariable = useVariablesStore(state => state.addVariable);
+  const removeVariable = useVariablesStore(state => state.removeVariable);
 
   const selectedNode = useMemo(
     () => nodes.find(n => n.id === selectedNodeId),
     [nodes, selectedNodeId]
   );
 
-  const addVariable = () => {
+  const handleAddVariable = () => {
     const name = prompt("Variable name:");
     if (name && !variables.find(v => v.name === name)) {
-      useAppStore.getState().addVariable(name);
+      addVariable(name);
     }
-  };
-
-  const removeVariable = (name: string) => {
-    useAppStore.getState().removeVariable(name);
   };
 
   return (
@@ -178,7 +168,7 @@ export const Sidebar: React.FC = () => {
           <div className="bg-[#252525] border-b border-[#0a0a0a] text-[#999] text-[11px] font-semibold uppercase tracking-wider px-3 py-2 h-8 flex items-center justify-between">
             <span>VARIABLES</span>
             <button
-              onClick={addVariable}
+              onClick={handleAddVariable}
               className="text-[#666] text-base hover:text-[#999] transition-colors"
             >
               <Plus size={12} />

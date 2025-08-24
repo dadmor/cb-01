@@ -1,20 +1,29 @@
+// ============================================
 // src/views/Layout.tsx
-import React, { useRef, useState } from "react";
+// ============================================
+import React, { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useProjectIO } from "@/modules/project";
+import { useProjectStore } from "@/modules/project/store/useProjectStore";
 
 // Layout components
-import { Header, TabNavigation, QuickActions, Tab } from './layout';
+import { TabNavigation, Tab } from './layout';
 
 // Icons
 import { FolderOpen, Film, GitBranch, Sliders } from "lucide-react";
 
 export const Layout: React.FC = () => {
   const location = useLocation();
-  const [projectTitle, setProjectTitle] = useState("Untitled Project");
+  
+  // Project store
+  const projectTitle = useProjectStore(state => state.projectTitle);
+  const setProjectTitle = useProjectStore(state => state.setProjectTitle);
+  const exportProject = useProjectStore(state => state.exportProject);
+  const importProject = useProjectStore(state => state.importProject);
+  const newProject = useProjectStore(state => state.newProject);
 
-  // Hook do obsługi projektu
+  // Hook do obsługi IO
   const {
     fileInputRef,
     isImporting,
@@ -27,9 +36,9 @@ export const Layout: React.FC = () => {
   } = useProjectIO(projectTitle, {
     confirmNewProject: true,
     autoSaveEnabled: true,
-    autoSaveInterval: 30000, // Auto-zapis co 30 sekund
+    autoSaveInterval: 30000,
     onImportSuccess: (projectData) => {
-      setProjectTitle(projectData.title);
+      importProject(projectData);
       alert(`Projekt "${projectData.title}" został wczytany pomyślnie!`);
     },
     onImportError: (error) => {
@@ -42,8 +51,13 @@ export const Layout: React.FC = () => {
 
   const handleNewProject = () => {
     if (createNewProject()) {
-      setProjectTitle("Untitled Project");
+      newProject();
     }
+  };
+
+  const handleProjectExport = () => {
+    const projectData = exportProject();
+    handleExport();
   };
 
   const tabs: Tab[] = [
@@ -139,7 +153,7 @@ export const Layout: React.FC = () => {
                 />
                 
                 <button
-                  onClick={handleExport}
+                  onClick={handleProjectExport}
                   disabled={isExporting}
                   className="px-3 py-1.5 text-xs font-medium bg-[#2a2a2a] text-[#999] border border-[#3a3a3a] transition-colors hover:bg-[#333] hover:text-white disabled:opacity-50 flex items-center gap-2"
                 >

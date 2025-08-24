@@ -1,9 +1,11 @@
+// ============================================
 // src/modules/flow/nodes/ChoiceNode.tsx
+// ============================================
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
 import { cn } from "@/lib/utils";
 import { ChoiceNodeData } from "../types";
-import { useVariables } from "@/store/useAppStore";
+import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
 
 interface ChoiceNodeProps {
   data: ChoiceNodeData;
@@ -12,7 +14,7 @@ interface ChoiceNodeProps {
 
 export const ChoiceNode: React.FC<ChoiceNodeProps> = ({ data, selected }) => {
   const { label, effects } = data;
-  const variables = useVariables();
+  const variables = useVariablesStore(state => state.variables);
   
   const effectEntries = Object.entries(effects).filter(([_, value]) => value !== 0);
   const hasEffects = effectEntries.length > 0;

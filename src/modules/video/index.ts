@@ -1,11 +1,10 @@
 // src/modules/video/index.ts
-
-// Export all types
-export * from './types';
+// Export services
+export * from './services/VideoStorageService';
 
 // Export store
-export * from './store';
+export * from './store/videoPlayerStore';
 
 // Export components
-export { VideoTimeline } from './VideoTimeline';
-export { VideoReloadModal } from './VideoReloadModal';
+export { VideoList } from './components/VideoList';
+export { VideoPlayer } from './components/VideoPlayer';
