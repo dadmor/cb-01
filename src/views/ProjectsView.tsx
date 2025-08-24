@@ -1,6 +1,6 @@
 // src/views/ProjectsView.tsx
 import React from 'react';
-import { FolderOpen, Plus, Clock, Film } from 'lucide-react';
+import { FolderOpen, Plus, Film } from 'lucide-react';
 
 export const ProjectsView: React.FC = () => {
   return (

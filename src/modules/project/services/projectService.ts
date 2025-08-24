@@ -1,4 +1,6 @@
+// ============================================
 // src/modules/project/services/projectService.ts
+// ============================================
 import { ProjectData, ProjectMetadata } from '../types';
 import { useProjectStore } from '../store/useProjectStore';
 
@@ -9,24 +11,32 @@ export class ProjectService {
 
   /**
    * Eksportuj aktualny stan projektu do JSON
+   * - wykorzystujemy tytuł podany w argumencie (jeśli różni się od store)
    */
   static exportProject(title: string): ProjectData {
-    return useProjectStore.getState().exportProject();
+    const data = useProjectStore.getState().exportProject();
+    if (title && title !== data.title) {
+      return { ...data, title };
+    }
+    return data;
   }
 
   /**
-   * Pobierz projekt jako plik JSON
+   * Pobierz projekt jako plik JSON (Blob + ObjectURL)
    */
   static downloadProject(projectData: ProjectData): void {
     const dataStr = JSON.stringify(projectData, null, 2);
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-    
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
     const link = document.createElement('a');
-    link.href = dataUri;
+    link.href = url;
     link.download = `${projectData.title.replace(/\s+/g, '_')}_${Date.now()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
   }
 
   /**

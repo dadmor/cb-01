@@ -26,10 +26,10 @@ const nodeTypes: NodeTypes = {
   choice: ChoiceNode,
 };
 
-// Default edge style
+// Default edge style (spójny obiekt markerEnd)
 const defaultEdgeOptions = {
-  type: "smoothstep",
-  markerEnd: "arrow",
+  type: "smoothstep" as const,
+  markerEnd: { type: "arrow" as const },
   style: {
     strokeWidth: 2,
     stroke: "#52525b",
@@ -53,7 +53,7 @@ export const FlowCanvas: React.FC = React.memo(() => {
     [nodes]
   );
 
-  // Enhanced edges with selection styles
+  // Enhanced edges with selection styles (bez nadpisywania własnych ustawień)
   const enrichedEdges = useMemo(() => {
     return edges.map((edge) => {
       const isSelectedChoice = !!selectedNodeId && 
@@ -64,6 +64,7 @@ export const FlowCanvas: React.FC = React.memo(() => {
       if (isSelectedChoice) {
         return {
           ...edge,
+          type: "smoothstep" as const,
           style: {
             strokeWidth: 3,
             stroke: "#dc2626",
@@ -121,9 +122,17 @@ export const FlowCanvas: React.FC = React.memo(() => {
     selectNode(null);
   }, [selectNode]);
 
-  // Handle delete key
+  // Helper: czy aktualny target to pole edycyjne
+  const isEditableTarget = (el: EventTarget | null) => {
+    return el instanceof HTMLElement &&
+      (el.isContentEditable ||
+       ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
+  };
+
+  // Handle delete key (z ochroną przed usuwaniem podczas edycji)
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return;
       if ((event.key === "Delete" || event.key === "Backspace") && selectedNodeId) {
         event.preventDefault();
         deleteNode(selectedNodeId);

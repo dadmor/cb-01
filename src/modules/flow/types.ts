@@ -1,4 +1,6 @@
+// ============================================
 // src/modules/flow/types.ts
+// ============================================
 import { Node, Edge } from "@xyflow/react";
 import { Condition } from "@/modules/variables/types";
 
@@ -7,7 +9,7 @@ export type SceneNodeData = {
   label: string;
   description?: string;
   durationSec: number;
-  condition?: Condition;
+  conditions?: Condition[];
   defaultChoiceId?: string;
   videoSegmentId?: string;
   // Runtime state
@@ -15,6 +17,8 @@ export type SceneNodeData = {
   isCurrent?: boolean;
   remainingMs?: number;
   hasCondition?: boolean;
+  // DODANE: spójny typ dla start node'a
+  isStart?: boolean;
 }
 
 export type ChoiceNodeData = {
@@ -22,7 +26,7 @@ export type ChoiceNodeData = {
   effects: Record<string, number>;
   // Runtime state
   isAvailable?: boolean;
-  onClick?: () => void;
+  // UWAGA: nie trzymaj tu funkcji (serializacja persist)
   id?: string;
 }
 
