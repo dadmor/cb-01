@@ -1,0 +1,7 @@
+<!-- favicon.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <rect x="10" y="10" width="100" height="100" rx="8" fill="#FFFFFF" stroke="#000000" stroke-width="1.5"/>
+  <text x="20" y="35" fill="#000000" style="font-size: 21px; font-family: sans-serif;">Tc</text>
+  <text x="60" y="70" fill="#000000" style="font-size: 36px; font-family: sans-serif; font-weight: bold;" text-anchor="middle">Ctx</text>
+  <text x="60" y="95" fill="#000000" style="font-size: 16px; font-family: sans-serif;" text-anchor="middle">TheContext</text>
+</svg>

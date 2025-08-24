@@ -1,0 +1,167 @@
+{
+  "title": "Przykładowa Przygoda",
+  "description": "Interaktywna historia z systemem punktów",
+  "variables": [
+    {
+      "name": "zdrowie",
+      "value": 10,
+      "initialValue": 10,
+      "min": 0,
+      "max": 20
+    },
+    {
+      "name": "energia",
+      "value": 5,
+      "initialValue": 5,
+      "min": 0,
+      "max": 10
+    },
+    {
+      "name": "złoto",
+      "value": 0,
+      "initialValue": 0,
+      "min": 0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "main-1",
+      "type": "main",
+      "position": {
+        "x": 112,
+        "y": 320
+      },
+      "data": {
+        "label": "Start przygody",
+        "description": "Stoisz przed wejściem do tajemniczego lasu. Słońce zachodzi, a przed tobą rozciągają się dwie ścieżki. Czas podjąć decyzję.",
+        "durationSec": 5,
+        "defaultDecisionId": "decision-2"
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 112,
+        "y": 320
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-2",
+      "type": "decision",
+      "position": {
+        "x": 448,
+        "y": 288
+      },
+      "data": {
+        "label": "Idź na północ",
+        "deltas": {
+          "energia": -1
+        }
+      },
+      "width": 128,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 448,
+        "y": 288
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-3",
+      "type": "main",
+      "position": {
+        "x": 624,
+        "y": 256
+      },
+      "data": {
+        "label": "Las",
+        "description": "Gęsty las otacza cię ze wszystkich stron. Drzewa szepcą tajemnice, a w oddali słychać dzikie zwierzęta. Musisz być ostrożny.",
+        "durationSec": 10,
+        "condition": {
+          "varName": "energia",
+          "op": "gte",
+          "value": 1
+        }
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 624,
+        "y": 256
+      },
+      "dragging": false
+    },
+    {
+      "id": "decision-4",
+      "type": "decision",
+      "position": {
+        "x": 448,
+        "y": 416
+      },
+      "data": {
+        "label": "Odpoczywaj",
+        "deltas": {
+          "energia": 3,
+          "zdrowie": 1
+        }
+      },
+      "width": 128,
+      "height": 32,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 448,
+        "y": 416
+      },
+      "dragging": false
+    },
+    {
+      "id": "main-5",
+      "type": "main",
+      "position": {
+        "x": 624,
+        "y": 384
+      },
+      "data": {
+        "label": "Obóz",
+        "description": "Znalazłeś bezpieczne miejsce na odpoczynek. Ognisko trzaska przyjemnie, a ty czujesz jak siły wracają. To była dobra decyzja.",
+        "durationSec": 3
+      },
+      "width": 256,
+      "height": 96,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 624,
+        "y": 384
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "id": "main-1-decision-2",
+      "source": "main-1",
+      "target": "decision-2"
+    },
+    {
+      "id": "decision-2-main-3",
+      "source": "decision-2",
+      "target": "main-3"
+    },
+    {
+      "id": "main-1-decision-4",
+      "source": "main-1",
+      "target": "decision-4"
+    },
+    {
+      "id": "decision-4-main-5",
+      "source": "decision-4",
+      "target": "main-5"
+    }
+  ],
+  "version": "1.0.0",
+  "createdAt": "2025-08-19T19:10:38.748Z",
+  "updatedAt": "2025-08-19T19:10:38.748Z"
+}
