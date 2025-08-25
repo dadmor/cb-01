@@ -17,9 +17,8 @@ export type SceneNodeData = {
   isCurrent?: boolean;
   remainingMs?: number;
   hasCondition?: boolean;
-  // DODANE: spójny typ dla start node'a
-  isStart?: boolean;
-}
+  // Uproszczenie: brak isStart — start rozpoznajemy po START_NODE_ID
+};
 
 export type ChoiceNodeData = {
   label: string;
@@ -28,7 +27,7 @@ export type ChoiceNodeData = {
   isAvailable?: boolean;
   // UWAGA: nie trzymaj tu funkcji (serializacja persist)
   id?: string;
-}
+};
 
 // ============= NODE TYPES =============
 export type SceneNode = Node<SceneNodeData, "scene">;

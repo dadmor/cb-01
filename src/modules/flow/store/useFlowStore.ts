@@ -20,7 +20,7 @@ const generateId = (prefix: 'scene' | 'choice'): string => {
   return `${prefix}_${timestamp}_${randomStr}`;
 };
 
-// Stały ID dla węzła startowego
+// Stały ID dla węzła startowego (jedyna prawda o starcie)
 export const START_NODE_ID = "scene_start";
 
 interface FlowState {
@@ -55,8 +55,8 @@ const createInitialNodes = (): StoryNode[] => [
     position: snapPositionToGrid({ x: 250, y: 250 }),
     data: { 
       label: "Start", 
-      durationSec: 5,
-      isStart: true
+      durationSec: 5
+      // Uwaga: brak flagi isStart — start rozpoznajemy po ID
     },
   } as SceneNode,
 ];
