@@ -42,7 +42,13 @@ export const PlayView: React.FC = () => {
   const variables = useVariablesStore((s) => s.variables);
   const loadVariables = useVariablesStore((s) => s.loadVariables);
 
-  const rf = useReactFlow();
+  const { setCenter, fitView, getZoom } = useReactFlow();
+
+  // Referencja do ostatnio wycentrowanego node'a aby uniknąć powtórnego centrowania
+  const lastCenteredRef = React.useRef<string | null>(null);
+  
+  // Flag do śledzenia czy to pierwsza inicjalizacja
+  const isFirstRender = React.useRef(true);
 
   React.useEffect(() => {
     if (!currentSceneId) start();
@@ -53,12 +59,46 @@ export const PlayView: React.FC = () => {
     [nodes, currentSceneId]
   );
 
+  // Inicjalne fitView przy pierwszym renderze
+  React.useEffect(() => {
+    if (isFirstRender.current && nodes.length > 0) {
+      isFirstRender.current = false;
+      // Poczekaj na następną klatkę aby ReactFlow się zainicjalizował
+      requestAnimationFrame(() => {
+        fitView({
+          padding: 0.2,
+          duration: 800,
+          maxZoom: 1.0,
+          minZoom: 0.5
+        });
+      });
+    }
+  }, [nodes.length, fitView]);
+
+  // Płynne przesuwanie do aktualnej sceny
   React.useEffect(() => {
     if (!currentScene) return;
-    const cx = currentScene.position.x + 120;
-    const cy = currentScene.position.y + 120;
-    rf.setCenter(cx, cy, { zoom: 0.8, duration: 300 });
-  }, [currentScene, rf]);
+    
+    // Unikaj powtórnego centrowania tego samego node'a
+    if (lastCenteredRef.current === currentScene.id) return;
+    
+    // Zakładając że SceneNode ma rozmiar ~240x240, więc środek to +120
+    const nodeCenterX = currentScene.position.x + 120;
+    const nodeCenterY = currentScene.position.y + 120;
+    
+    // Zachowaj obecny zoom lub użyj domyślnego
+    const currentZoom = getZoom();
+    const targetZoom = currentZoom < 0.5 ? 0.8 : currentZoom;
+    
+    // Użyj setCenter z animacją
+    setCenter(nodeCenterX, nodeCenterY, {
+      zoom: targetZoom,
+      duration: 600,
+    }).then(() => {
+      lastCenteredRef.current = currentScene.id;
+    });
+    
+  }, [currentScene, setCenter, getZoom]);
 
   const choices = React.useMemo(() => {
     if (!currentScene) return [];
@@ -84,10 +124,19 @@ export const PlayView: React.FC = () => {
     if (!unlocked) return;
     const nextVars = applyEffects(choiceNode.data.effects || {}, variables);
     loadVariables(nextVars);
+    
+    // Resetuj referencję aby wymusić animację do nowej sceny
+    lastCenteredRef.current = null;
     goTo(nextScene.id);
   };
 
-  // tylko bieżąca scena ma selected = true (pomarańczowa ramka), reszta off
+  const handleRestart = () => {
+    lastCenteredRef.current = null;
+    isFirstRender.current = true;
+    resetPlay();
+  };
+
+  // Tylko bieżąca scena ma selected = true (pomarańczowa ramka)
   const cleanNodes = React.useMemo(
     () =>
       nodes.map((n) => ({
@@ -129,7 +178,7 @@ export const PlayView: React.FC = () => {
           panOnDrag={true}
           zoomOnScroll={true}
           zoomOnPinch={true}
-          fitView
+          // Usuń fitView prop - kontrolujemy to programowo
         >
           <Controls />
           <MiniMap />
@@ -142,8 +191,8 @@ export const PlayView: React.FC = () => {
           <span className="text-xs text-[#999] font-medium">PLAY</span>
           <div className="flex items-center gap-2">
             <button
-              onClick={resetPlay}
-              className="px-2 py-1 text-[11px] bg-[#2a2a2a] border border-[#3a3a3a] text-[#bbb] hover:bg-[#333]"
+              onClick={handleRestart}
+              className="px-2 py-1 text-[11px] bg-[#2a2a2a] border border-[#3a3a3a] text-[#bbb] hover:bg-[#333] transition-colors"
             >
               Restart
             </button>
@@ -170,10 +219,10 @@ export const PlayView: React.FC = () => {
                     key={c.id}
                     onClick={() => handleChoose(c.id)}
                     disabled={!unlocked}
-                    className={`text-left px-3 py-2 text-xs border ${
+                    className={`text-left px-3 py-2 text-xs border transition-all ${
                       unlocked
-                        ? "bg-[#2a2a2a] border-[#3a3a3a] text-[#ddd] hover:bg-[#333]"
-                        : "bg-[#1a1a1a] border-[#2a2a2a] text-[#666] cursor-not-allowed"
+                        ? "bg-[#2a2a2a] border-[#3a3a3a] text-[#ddd] hover:bg-[#333] hover:border-[#4a4a4a]"
+                        : "bg-[#1a1a1a] border-[#2a2a2a] text-[#666] cursor-not-allowed opacity-50"
                     }`}
                   >
                     {c.data.label}
@@ -181,7 +230,7 @@ export const PlayView: React.FC = () => {
                 );
               })}
               {choices.length === 0 && (
-                <div className="text-[11px] text-[#666]">No choices</div>
+                <div className="text-[11px] text-[#666] italic">No choices available</div>
               )}
             </div>
           </div>
@@ -189,7 +238,7 @@ export const PlayView: React.FC = () => {
 
         <div className="h-6 bg-[#1a1a1a] border-t border-[#0a0a0a] px-3 text-[11px] text-[#666] flex items-center justify-between">
           <span>{nodes.length} nodes • {edges.length} edges</span>
-          <span>{currentScene ? `ID: ${currentScene.id}` : "Ready"}</span>
+          <span>{currentScene ? `Scene: ${currentScene.id}` : "Ready"}</span>
         </div>
       </div>
     </div>

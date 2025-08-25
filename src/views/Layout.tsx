@@ -52,11 +52,15 @@ export const Layout: React.FC = () => {
   };
 
   const tabs: Tab[] = [
-    { id: "projects", path: "/", label: "Projects", icon: FolderOpen },
-    { id: "video", path: "/video", label: "Video", icon: Film },
-    { id: "story", path: "/story", label: "Story", icon: GitBranch },
-    { id: "decisions", path: "/decisions", label: "Decisions", icon: Sliders },
+    // { id: "projects", path: "/", label: "Projects", icon: FolderOpen },
+    { id: "decisions", path: "/decisions", label: "Story Map", icon: GitBranch },
+    { id: "story", path: "/story", label: "Screen Play", icon: Sliders },
     { id: "variables", path: "/variables", label: "Variables", icon: Sliders },
+    { id: "video", path: "/video", label: "Video", icon: Film },
+   
+   
+  
+  
     { id: "play", path: "/play", label: "Play", icon: PlayCircle },
   ];
 
