@@ -1,7 +1,7 @@
 // src/modules/video/components/VideoPlayer.tsx
 import React, { useRef, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
-import { useVideoPlayerStore } from '../store/videoPlayerStore';
+import { useVideoPlayerStore } from '@/modules/video';
 
 export const VideoPlayer: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -23,8 +23,8 @@ export const VideoPlayer: React.FC = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    const handleLoadedMetadata = () => setDuration(video.duration);
-    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    const handleLoadedMetadata = () => setDuration(video.duration || 0);
+    const handleTimeUpdate = () => setCurrentTime(video.currentTime || 0);
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
 
@@ -42,28 +42,30 @@ export const VideoPlayer: React.FC = () => {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
     };
-  }, [currentVideoUrl, volume]);
+  }, [currentVideoUrl, volume, setDuration, setCurrentTime, setIsPlaying]);
 
   const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-      } else {
-        videoRef.current.pause();
-      }
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      void v.play();
+    } else {
+      v.pause();
     }
   };
 
   const seek = (time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-    }
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = Math.max(0, Math.min(time, Number.isFinite(duration) ? duration : v.duration || 0));
   };
 
   const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    if (!Number.isFinite(seconds)) return '0:00';
+    const secs = Math.max(0, Math.floor(seconds));
+    const mins = Math.floor(secs / 60);
+    const rest = secs % 60;
+    return `${mins}:${rest.toString().padStart(2, '0')}`;
   };
 
   if (!currentVideoUrl) {
@@ -82,18 +84,24 @@ export const VideoPlayer: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-black">
+    // ⬇️ KLUCZOWE: min-h-0 żeby flex child mógł się „spłaszczyć”
+    <div className="flex-1 flex flex-col bg-black min-h-0">
       {/* Video Display */}
-      <div className="flex-1 flex items-center justify-center">
+      {/* ⬇️ KLUCZOWE: min-h-0 + overflow-hidden, a <video> ma object-contain i wypełnia dostępne pole */}
+      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
           src={currentVideoUrl}
-          className="max-w-full max-h-full"
+          className="w-full h-full max-w-full max-h-full object-contain"
+          playsInline
+          controls={false} // używamy własnych kontrolek
+          preload="metadata"
         />
       </div>
 
       {/* Controls */}
-      <div className="h-24 bg-[#252525] border-t border-[#0a0a0a] p-3">
+      {/* ⬇️ KLUCZOWE: shrink-0 — pasek sterowania nie jest ściskany i zawsze mieści się w oknie */}
+      <div className="h-24 shrink-0 bg-[#252525] border-t border-[#0a0a0a] p-3">
         {/* Progress Bar */}
         <div className="mb-3">
           <div className="flex items-center gap-2 text-[10px] text-[#666] mb-1">
@@ -101,15 +109,20 @@ export const VideoPlayer: React.FC = () => {
             <div className="flex-1 h-1 bg-[#1a1a1a] relative">
               <div
                 className="absolute h-full bg-[#E84E36]"
-                style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                style={{
+                  width: `${
+                    duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0
+                  }%`
+                }}
               />
               <input
                 type="range"
-                min="0"
-                max={duration}
-                value={currentTime}
+                min={0}
+                max={Math.max(0, duration || 0)}
+                value={Math.min(currentTime, duration || 0)}
                 onChange={(e) => seek(parseFloat(e.target.value))}
                 className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                aria-label="Seek"
               />
             </div>
             <span>{formatTime(duration)}</span>
@@ -122,18 +135,21 @@ export const VideoPlayer: React.FC = () => {
             <button
               onClick={() => seek(0)}
               className="p-2 bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] hover:bg-[#333] hover:text-white transition-colors"
+              aria-label="Restart"
             >
               <SkipBack className="w-4 h-4" />
             </button>
             <button
               onClick={togglePlayPause}
               className="p-2 bg-[#E84E36] text-white hover:bg-[#d63d2a] transition-colors"
+              aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </button>
             <button
-              onClick={() => seek(duration)}
+              onClick={() => seek(duration || 0)}
               className="p-2 bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] hover:bg-[#333] hover:text-white transition-colors"
+              aria-label="End"
             >
               <SkipForward className="w-4 h-4" />
             </button>
@@ -144,11 +160,11 @@ export const VideoPlayer: React.FC = () => {
             <span className="text-[10px] text-[#666]">Vol</span>
             <input
               type="range"
-              min="0"
-              max="100"
+              min={0}
+              max={100}
               value={volume}
               onChange={(e) => {
-                const vol = parseInt(e.target.value);
+                const vol = parseInt(e.target.value, 10);
                 setVolume(vol);
                 if (videoRef.current) {
                   videoRef.current.volume = vol / 100;
@@ -160,6 +176,7 @@ export const VideoPlayer: React.FC = () => {
                 backgroundColor: '#1a1a1a',
                 outline: 'none'
               }}
+              aria-label="Volume"
             />
             <span className="text-[10px] text-[#666] w-8 text-right">{volume}%</span>
           </div>

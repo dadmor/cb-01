@@ -12,6 +12,8 @@ import {
   OnConnect,
   OnSelectionChangeParams,
   Connection,
+  Edge,
+  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -21,128 +23,70 @@ import { isChoiceNode } from "./types";
 import { useFlowStore } from "./store/useFlowStore";
 import { GRID_SIZE } from "./gridHelpers";
 
-// Node types
+// Rejestr typów węzłów
 const nodeTypes: NodeTypes = {
   scene: SceneNode,
   choice: ChoiceNode,
 };
 
-// Default edge style (spójny obiekt markerEnd)
+// Spójny styl krawędzi (zawsze strzałka)
 const defaultEdgeOptions = {
   type: "smoothstep" as const,
-  markerEnd: { type: "arrow" as const },
-  style: {
-    strokeWidth: 2,
-    stroke: "#52525b",
-  },
+  markerEnd: { type: MarkerType.Arrow },
+  style: { strokeWidth: 2, stroke: "#52525b" },
 };
 
 export const FlowCanvas: React.FC = React.memo(() => {
-  // Flow store hooks
-  const nodes = useFlowStore(state => state.nodes);
-  const edges = useFlowStore(state => state.edges);
-  const selectedNodeId = useFlowStore(state => state.selectedNodeId);
-  const onNodesChange = useFlowStore(state => state.onNodesChange);
-  const onEdgesChange = useFlowStore(state => state.onEdgesChange);
-  const createChoice = useFlowStore(state => state.createChoice);
-  const selectNode = useFlowStore(state => state.selectNode);
-  const deleteNode = useFlowStore(state => state.deleteNode);
+  const nodes = useFlowStore(s => s.nodes);
+  const edges = useFlowStore(s => s.edges);
+  const selectedNodeId = useFlowStore(s => s.selectedNodeId);
+  const onNodesChange = useFlowStore(s => s.onNodesChange);
+  const onEdgesChange = useFlowStore(s => s.onEdgesChange);
+  const connect = useFlowStore(s => s.createChoice); // łączy bezpośrednio
+  const selectNode = useFlowStore(s => s.selectNode);
 
-  // Node map for quick lookup
-  const nodeMap = useMemo(
-    () => new Map(nodes.map(n => [n.id, n])),
-    [nodes]
-  );
+  const nodeMap = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
 
-  // Enhanced edges with selection styles (bez nadpisywania własnych ustawień)
-  const enrichedEdges = useMemo(() => {
+  // Krawędzie: lekkie podświetlenie tych „dotkniętych” wybranym choice
+  const enrichedEdges: Edge[] = useMemo(() => {
+    if (!selectedNodeId) return edges;
+    const selected = nodeMap.get(selectedNodeId);
+    if (!selected || !isChoiceNode(selected)) return edges;
+
     return edges.map((edge) => {
-      const isSelectedChoice = !!selectedNodeId && 
-        (edge.source === selectedNodeId || edge.target === selectedNodeId) &&
-        !!nodeMap.get(selectedNodeId) &&
-        isChoiceNode(nodeMap.get(selectedNodeId)!);
-
-      if (isSelectedChoice) {
-        return {
-          ...edge,
-          type: "smoothstep" as const,
-          style: {
-            strokeWidth: 3,
-            stroke: "#dc2626",
-          },
-          markerEnd: {
-            type: "arrow" as const,
-            color: "#dc2626",
-          },
-        };
-      }
+      const touchesSelected =
+        edge.source === selectedNodeId || edge.target === selectedNodeId;
+      if (!touchesSelected) return edge;
 
       return {
         ...edge,
-        ...defaultEdgeOptions,
-      };
+        style: { ...(edge.style ?? {}), strokeWidth: 3, stroke: "#dc2626" },
+        markerEnd: { type: MarkerType.Arrow, color: "#dc2626" },
+      } as Edge;
     });
   }, [edges, nodeMap, selectedNodeId]);
 
-  // Handle new connections
+  // Nowe połączenie → zwykła krawędź
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
       if (params.source && params.target) {
-        createChoice(params.source, params.target);
+        connect(params.source, params.target);
       }
     },
-    [createChoice]
+    [connect]
   );
 
-  // Handle selection
+  // Zmiana selekcji: prosto — zaznaczono node → zapisz; krawędź → czyść
   const onSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
       if (params.nodes.length > 0) {
         selectNode(params.nodes[0].id);
-      } else if (params.edges.length > 0) {
-        const edge = params.edges[0];
-        const sourceNode = nodeMap.get(edge.source);
-        const targetNode = nodeMap.get(edge.target);
-
-        if (sourceNode && isChoiceNode(sourceNode)) {
-          selectNode(sourceNode.id);
-        } else if (targetNode && isChoiceNode(targetNode)) {
-          selectNode(targetNode.id);
-        } else {
-          selectNode(null);
-        }
       } else {
         selectNode(null);
       }
     },
-    [selectNode, nodeMap]
+    [selectNode]
   );
-
-  // Handle pane click
-  const onPaneClick = useCallback(() => {
-    selectNode(null);
-  }, [selectNode]);
-
-  // Helper: czy aktualny target to pole edycyjne
-  const isEditableTarget = (el: EventTarget | null) => {
-    return el instanceof HTMLElement &&
-      (el.isContentEditable ||
-       ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
-  };
-
-  // Handle delete key (z ochroną przed usuwaniem podczas edycji)
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return;
-      if ((event.key === "Delete" || event.key === "Backspace") && selectedNodeId) {
-        event.preventDefault();
-        deleteNode(selectedNodeId);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNodeId, deleteNode]);
 
   return (
     <ReactFlow
@@ -153,11 +97,11 @@ export const FlowCanvas: React.FC = React.memo(() => {
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
       onSelectionChange={onSelectionChange}
-      onPaneClick={onPaneClick}
       connectionLineType={ConnectionLineType.SmoothStep}
       defaultEdgeOptions={defaultEdgeOptions}
-      deleteKeyCode={null}
-      snapToGrid={true}
+      // KLUCZOWE: natywne usuwanie węzłów i krawędzi; Start ma deletable: false, więc nie zniknie
+      deleteKeyCode={["Delete", "Backspace"]}
+      snapToGrid
       snapGrid={[GRID_SIZE, GRID_SIZE]}
       fitView
     >

@@ -1,7 +1,8 @@
 // src/views/VideoView.tsx
 import React from 'react';
-import { VideoList } from '@/modules/video/components/VideoList';
-import { VideoPlayer } from '@/modules/video/components/VideoPlayer';
+import { VideoList } from './video/VideoList';
+import { VideoPlayer } from './video/VideoPlayer';
+
 
 export const VideoView: React.FC = () => {
   return (

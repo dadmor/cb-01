@@ -1,8 +1,8 @@
 // src/modules/video/components/VideoList.tsx
 import React, { useRef } from 'react';
 import { Film, Upload, X, HardDrive } from 'lucide-react';
-import { useVideoStorage } from '../services/VideoStorageService';
-import { useVideoPlayerStore } from '../store/videoPlayerStore';
+import { useVideoPlayerStore, useVideoStorage } from '@/modules/video';
+
 
 export const VideoList: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);

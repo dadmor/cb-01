@@ -17,7 +17,7 @@ export type SceneNodeData = {
   isCurrent?: boolean;
   remainingMs?: number;
   hasCondition?: boolean;
-  // Uproszczenie: brak isStart — start rozpoznajemy po START_NODE_ID
+  // Start rozpoznajemy po stałym START_NODE_ID, nie przez flagę
 };
 
 export type ChoiceNodeData = {
@@ -25,8 +25,7 @@ export type ChoiceNodeData = {
   effects: Record<string, number>;
   // Runtime state
   isAvailable?: boolean;
-  // UWAGA: nie trzymaj tu funkcji (serializacja persist)
-  id?: string;
+  // UWAGA: brak pola `id` — ID zapewnia React Flow na poziomie Node
 };
 
 // ============= NODE TYPES =============
@@ -38,8 +37,8 @@ export type StoryNode = SceneNode | ChoiceNode;
 export type StoryEdge = Edge;
 
 // ============= TYPE GUARDS =============
-export const isSceneNode = (node: StoryNode): node is SceneNode => 
+export const isSceneNode = (node: StoryNode): node is SceneNode =>
   node.type === "scene";
 
-export const isChoiceNode = (node: StoryNode): node is ChoiceNode => 
+export const isChoiceNode = (node: StoryNode): node is ChoiceNode =>
   node.type === "choice";

@@ -15,6 +15,7 @@ export const Sidebar: React.FC = () => {
   const updateNode = useFlowStore((state) => state.updateNode);
   const deleteNode = useFlowStore((state) => state.deleteNode);
   const addSceneNode = useFlowStore((state) => state.addSceneNode);
+  const addChoiceNode = useFlowStore((state) => state.addChoiceNode); // <<< NOWE
 
   const variables = useVariablesStore((state) => state.variables);
 
@@ -30,14 +31,25 @@ export const Sidebar: React.FC = () => {
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] mb-px">
             <div className="bg-[#252525] border-b border-[#0a0a0a] text-[#999] text-[11px] font-semibold uppercase tracking-wider px-3 py-2 h-8 flex items-center justify-between">
               <span>{isSceneNode(selectedNode) ? "SCENE" : "CHOICE"} PROPERTIES</span>
-              {selectedNode.id !== START_NODE_ID && (
-                <button
-                  onClick={() => deleteNode(selectedNode.id)}
-                  className="text-[#666] text-[11px] hover:text-red-500 transition-colors"
-                >
-                  Delete
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {isSceneNode(selectedNode) && (
+                  <button
+                    onClick={() => addChoiceNode({ connectFromId: selectedNode.id })}
+                    className="text-[#666] text-[11px] hover:text-[#bbb] transition-colors"
+                    title="Add choice and connect from this scene"
+                  >
+                    + Choice from here
+                  </button>
+                )}
+                {selectedNode.id !== START_NODE_ID && (
+                  <button
+                    onClick={() => deleteNode(selectedNode.id)}
+                    className="text-[#666] text-[11px] hover:text-red-500 transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="p-3">
@@ -229,13 +241,22 @@ export const Sidebar: React.FC = () => {
         ) : (
           <div className="p-6 text-center">
             <p className="text-[#666] text-xs mb-4">No node selected</p>
-            <button
-              onClick={addSceneNode}
-              className="bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-xs font-medium py-1.5 px-3 hover:border-[#4a4a4a] hover:bg-[#333] transition-colors inline-flex items-center"
-            >
-              <Plus size={12} className="mr-2" />
-              Add Scene
-            </button>
+            <div className="flex items-center gap-2 justify-center">
+              <button
+                onClick={addSceneNode}
+                className="bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-xs font-medium py-1.5 px-3 hover:border-[#4a4a4a] hover:bg-[#333] transition-colors inline-flex items-center"
+              >
+                <Plus size={12} className="mr-2" />
+                Add Scene
+              </button>
+              <button
+                onClick={() => addChoiceNode()}
+                className="bg-[#2a2a2a] border border-[#3a3a3a] text-[#999] text-xs font-medium py-1.5 px-3 hover:border-[#4a4a4a] hover:bg-[#333] transition-colors inline-flex items-center"
+              >
+                <Plus size={12} className="mr-2" />
+                Add Choice
+              </button>
+            </div>
           </div>
         )}
       </div>
