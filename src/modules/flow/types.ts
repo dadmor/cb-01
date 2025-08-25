@@ -12,20 +12,13 @@ export type SceneNodeData = {
   conditions?: Condition[];
   defaultChoiceId?: string;
   videoSegmentId?: string;
-  // Runtime state
-  isUnlocked?: boolean;
-  isCurrent?: boolean;
-  remainingMs?: number;
-  hasCondition?: boolean;
-  // Start rozpoznajemy po stałym START_NODE_ID, nie przez flagę
+  // UWAGA: usunięto nieużywane runtime-flagi (isUnlocked, isCurrent, remainingMs, hasCondition)
 };
 
 export type ChoiceNodeData = {
   label: string;
   effects: Record<string, number>;
-  // Runtime state
-  isAvailable?: boolean;
-  // UWAGA: brak pola `id` — ID zapewnia React Flow na poziomie Node
+  // UWAGA: usunięto nieużywane runtime-flagę isAvailable
 };
 
 // ============= NODE TYPES =============

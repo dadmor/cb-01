@@ -138,7 +138,11 @@ export const useFlowStore = create<FlowState>()(
           };
         }),
 
-      selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
+      // ✅ Strażnik: aktualizuj tylko gdy wartość się zmienia (eliminuje pętlę renderów)
+      selectNode: (nodeId) =>
+        set((state) =>
+          state.selectedNodeId === nodeId ? state : { selectedNodeId: nodeId }
+        ),
 
       updateNode: (nodeId, data) =>
         set((state) => ({
