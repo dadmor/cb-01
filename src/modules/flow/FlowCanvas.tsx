@@ -19,6 +19,7 @@ import { SceneNode } from "./nodes/SceneNode";
 import { ChoiceNode } from "./nodes/ChoiceNode";
 import { isChoiceNode } from "./types";
 import { useFlowStore } from "./store/useFlowStore";
+import { GRID_SIZE } from "./gridHelpers";
 
 // Node types
 const nodeTypes: NodeTypes = {
@@ -157,12 +158,12 @@ export const FlowCanvas: React.FC = React.memo(() => {
       defaultEdgeOptions={defaultEdgeOptions}
       deleteKeyCode={null}
       snapToGrid={true}
-      snapGrid={[24, 24]}
+      snapGrid={[GRID_SIZE, GRID_SIZE]}
       fitView
     >
       <Controls />
       <MiniMap />
-      <Background gap={24} size={1} />
+      <Background gap={GRID_SIZE} size={1} />
     </ReactFlow>
   );
 });
