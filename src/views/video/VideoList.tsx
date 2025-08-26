@@ -1,6 +1,6 @@
 // src/views/video/VideoList.tsx
 import React, { useRef } from 'react';
-import { Film, Upload, X, HardDrive } from 'lucide-react';
+import { Film, Upload, HardDrive, X } from 'lucide-react';
 import { useVideoPlayerStore, useVideoStorage } from '@/modules/video';
 import { 
   Panel, 
@@ -48,7 +48,6 @@ export const VideoList: React.FC = () => {
     for (const file of videoFiles) {
       try {
         const id = await storeVideo(file);
-        
         if (videos.length === 0 && !currentVideoId) {
           handleSelectVideo(id);
         }
@@ -59,21 +58,15 @@ export const VideoList: React.FC = () => {
     }
     
     setUploadingCount(0);
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSelectVideo = async (videoId: string) => {
     if (currentVideoId === videoId) return;
-    
     setIsLoading(true);
     try {
       const file = await retrieveVideo(videoId);
-      if (file) {
-        setCurrentVideo(videoId, file);
-      }
+      if (file) setCurrentVideo(videoId, file);
     } catch (error) {
       console.error('Failed to load video:', error);
     } finally {
@@ -82,16 +75,12 @@ export const VideoList: React.FC = () => {
   };
 
   const handleDeleteVideo = async (id: string) => {
-    if (confirm('Delete this video from storage?')) {
-      await deleteVideo(id);
-      
-      if (currentVideoId === id) {
-        clearCurrentVideo();
-        const remaining = videos.filter(v => v.id !== id);
-        if (remaining.length > 0) {
-          handleSelectVideo(remaining[0].id);
-        }
-      }
+    if (!confirm('Delete this video from storage?')) return;
+    await deleteVideo(id);
+    if (currentVideoId === id) {
+      clearCurrentVideo();
+      const remaining = videos.filter(v => v.id !== id);
+      if (remaining.length > 0) handleSelectVideo(remaining[0].id);
     }
   };
 
@@ -107,7 +96,6 @@ export const VideoList: React.FC = () => {
     <Panel className="w-80 border-r border-zinc-800 flex flex-col">
       <PanelHeader 
         title="Media Pool" 
-
         actions={
           <Button
             variant="ghost"
@@ -116,7 +104,7 @@ export const VideoList: React.FC = () => {
             onClick={() => fileInputRef.current?.click()}
             disabled={!isInitialized || uploadingCount > 0}
           >
-            {uploadingCount > 0 && `Uploading ${uploadingCount}...`}
+            {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : 'Import'}
           </Button>
         }
       />
@@ -133,7 +121,7 @@ export const VideoList: React.FC = () => {
       {/* Storage indicator */}
       {isInitialized && (
         <div className="px-3 py-2 bg-zinc-950 border-b border-zinc-800">
-          <div className="flex items-center justify-between mb-1" style={{ fontSize: '10px' }}>
+          <div className="flex items-center justify-between mb-1 text-[10px]">
             <span className="flex items-center gap-1 text-zinc-600">
               <HardDrive className="w-3 h-3" />
               Browser Storage
@@ -179,27 +167,46 @@ export const VideoList: React.FC = () => {
                 key={video.id}
                 selected={currentVideoId === video.id}
                 compact
-                className="cursor-pointer"
-                onClose={() => handleDeleteVideo(video.id)}
+                className="relative cursor-pointer"
               >
+                {/* Delete button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteVideo(video.id);
+                  }}
+                  className="absolute top-1 right-1 p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400"
+                  title="Delete video"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Kliknięcie w treść = wybór wideo */}
                 <div onClick={() => handleSelectVideo(video.id)}>
                   <div className="flex items-center gap-2 mb-1">
                     <Film className="w-4 h-4 text-zinc-600 flex-shrink-0" />
                     <p className="text-xs text-zinc-300 truncate">{video.fileName}</p>
                   </div>
-                  <div className="flex items-center gap-3 text-zinc-600" style={{ fontSize: '10px' }}>
+
+                  <div className="flex items-center gap-3 text-zinc-600 text-[10px]">
                     <span>{formatBytes(video.fileSize)}</span>
                   </div>
                   
+                  {/* Miniaturki */}
                   {video.thumbnails && video.thumbnails.length > 0 && (
                     <div className="flex gap-1 mt-2">
                       {video.thumbnails.slice(0, 4).map((thumb, idx) => (
-                        <img 
-                          key={idx} 
-                          src={thumb} 
-                          className="w-1/4 h-auto opacity-50"
-                          alt=""
-                        />
+                        <div
+                          key={idx}
+                          className="w-1/4 aspect-video bg-zinc-900 overflow-hidden rounded"
+                        >
+                          <img
+                            src={thumb}
+                            alt=""
+                            className="w-full h-full object-cover opacity-70"
+                            draggable={false}
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
@@ -211,7 +218,7 @@ export const VideoList: React.FC = () => {
       </PanelContent>
 
       <PanelFooter>
-        <span style={{ fontSize: '10px' }}>
+        <span className="text-[10px]">
           {videos.length} video{videos.length !== 1 ? 's' : ''} stored
         </span>
       </PanelFooter>

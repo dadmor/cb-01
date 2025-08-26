@@ -1,6 +1,6 @@
 // src/views/video/VideoSceneLinker.tsx
 import React, { useMemo, useState, useEffect } from 'react';
-import { Film, Search } from 'lucide-react';
+import { Film } from 'lucide-react';
 import { useFlowStore } from '@/modules/flow/store/useFlowStore';
 import { useVideoStorage, useVideoPlayerStore } from '@/modules/video';
 import { isSceneNode } from '@/modules/flow/types';
