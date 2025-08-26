@@ -55,7 +55,7 @@ export const Layout: React.FC = () => {
 
   return (
     <ReactFlowProvider>
-      <div className="h-screen flex flex-col bg-zinc-900">
+      <div className="h-screen flex flex-col bg-zinc-900 select-none">
         {/* Header */}
         <header className="flex-shrink-0 h-10 bg-gradient-to-b from-zinc-950 to-zinc-900 border-b border-zinc-900">
           <div className="h-full flex items-center">

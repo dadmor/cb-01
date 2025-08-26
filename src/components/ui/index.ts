@@ -5,3 +5,4 @@ export * from './Sidebar';
 export * from './Panel';
 export * from './Input';
 export * from './Layout';
+export * from './NumberInput';

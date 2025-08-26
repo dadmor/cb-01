@@ -1,4 +1,4 @@
-// src/views/PlayView.tsx - PROPERLY REFACTORED
+// src/views/PlayView.tsx
 import React from "react";
 import {
   ReactFlow,
@@ -26,12 +26,7 @@ import {
   Panel, 
   PanelContent, 
   PanelFooter, 
-  PanelHeader,
-  FlexContainer,
-  CanvasContainer,
-  VideoContainer,
-  EmptyState,
-  StatusText
+  PanelHeader
 } from "@/components/ui";
 
 const nodeTypes: NodeTypes = {
@@ -134,8 +129,10 @@ export const PlayView: React.FC = () => {
     (choiceId: string) => {
       const choiceNode = nodes.find((n) => n.id === choiceId);
       if (!choiceNode || !isChoiceNode(choiceNode)) return;
+      
       const nextScene = getTargetSceneForChoice(choiceId);
       if (!nextScene) return;
+      
       const unlocked = evalConditions(nextScene.data.conditions, variables);
       if (!unlocked) return;
 
@@ -178,9 +175,9 @@ export const PlayView: React.FC = () => {
   );
 
   return (
-    <FlexContainer direction="row" fullHeight>
-      {/* Canvas z grafem */}
-      <CanvasContainer>
+    <div className="flex h-full">
+      {/* Canvas with flow graph */}
+      <div className="flex-1 bg-zinc-950">
         <ReactFlow
           nodes={cleanNodes}
           edges={cleanEdges}
@@ -201,52 +198,51 @@ export const PlayView: React.FC = () => {
           <MiniMap />
           <Background gap={24} size={1} />
         </ReactFlow>
-      </CanvasContainer>
+      </div>
 
-      {/* Panel kontrolny */}
+      {/* Control sidebar */}
       <Panel className="w-[420px] border-l border-zinc-800">
         <PanelHeader 
           title="Play" 
-          compact
           actions={
-            <FlexContainer>
+            <div className="flex items-center gap-2">
               {secondsLeft !== null && (
-                <FlexContainer className="gap-1 text-zinc-300 text-xs">
+                <div className="flex items-center gap-1 text-zinc-300 text-xs">
                   <Clock className="w-3 h-3" />
-                  <StatusText>{secondsLeft}s</StatusText>
-                </FlexContainer>
+                  <span>{secondsLeft}s</span>
+                </div>
               )}
-              <Button variant="default" size="xs" onClick={handleRestart}>
+              <Button size="xs" onClick={handleRestart}>
                 Restart
               </Button>
-            </FlexContainer>
+            </div>
           }
         />
 
-        {/* Sekcja video */}
-        <VideoContainer>
+        {/* Video section */}
+        <div className="h-[280px] border-b border-zinc-800 flex flex-col min-h-0">
           <VideoPlayer />
-        </VideoContainer>
+        </div>
 
-        {/* Informacje i wybory */}
-        <PanelContent className="flex-1 overflow-y-auto">
-          <Card title="Current Scene" compact>
-            <StatusText size="sm" variant={currentScene ? 'default' : 'muted'}>
+        {/* Info and choices */}
+        <PanelContent>
+          <Card title="Current Scene">
+            <span className={`text-xs ${currentScene ? 'text-zinc-300' : 'text-zinc-600'}`}>
               {currentScene ? currentScene.data.label : "—"}
-            </StatusText>
+            </span>
           </Card>
 
-          <Card title="Choices" compact className="mt-3">
-            <FlexContainer direction="col" className="gap-2">
-              {choices.length > 0 ? (
-                choices.map((c) => {
+          <Card title="Choices" className="mt-3">
+            {choices.length > 0 ? (
+              <div className="space-y-2">
+                {choices.map((c) => {
                   const target = getTargetSceneForChoice(c.id);
                   const unlocked = !!target && evalConditions(target.data.conditions, variables);
+                  
                   return (
                     <Button
                       key={c.id}
                       variant={unlocked ? "primary" : "default"}
-                      size="sm"
                       onClick={() => continueViaChoice(c.id)}
                       disabled={!unlocked}
                       className="w-full justify-start"
@@ -254,23 +250,23 @@ export const PlayView: React.FC = () => {
                       {c.data.label}
                     </Button>
                   );
-                })
-              ) : (
-                <EmptyState title="No choices available" />
-              )}
-            </FlexContainer>
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-zinc-600 text-center py-4">
+                No choices available
+              </p>
+            )}
           </Card>
         </PanelContent>
 
         <PanelFooter>
-          <StatusText variant="muted" size="xs">
-            {nodes.length} nodes • {edges.length} edges
-          </StatusText>
-          <StatusText variant="muted" size="xs" className="ml-auto">
+          <span>{nodes.length} nodes • {edges.length} edges</span>
+          <span className="ml-auto">
             {currentScene ? `Scene: ${currentScene.id}` : "Ready"}
-          </StatusText>
+          </span>
         </PanelFooter>
       </Panel>
-    </FlexContainer>
+    </div>
   );
 };

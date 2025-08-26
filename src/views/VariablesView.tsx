@@ -1,16 +1,15 @@
-// src/views/VariablesView.tsx - FIXED
+// src/views/VariablesView.tsx
 import React, { useMemo } from "react";
 import { Plus, RotateCcw } from "lucide-react";
 import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
 import type { Variable } from "@/modules/variables/types";
 import { 
   Button, 
-  Input, 
-  NumberInput, 
+  NumberInput,
   Panel, 
   PanelContent, 
   PanelHeader,
-  StatusText
+  PanelFooter
 } from "@/components/ui";
 
 export const VariablesView: React.FC = () => {
@@ -47,12 +46,11 @@ export const VariablesView: React.FC = () => {
     <Panel className="h-full bg-zinc-900">
       <PanelHeader 
         title="Variables"
-        compact
         actions={
           <div className="flex items-center gap-2">
-            <StatusText variant="muted" size="xs">
+            <span className="text-xs text-zinc-500">
               {variables.length} items
-            </StatusText>
+            </span>
             <Button
               variant="default"
               size="xs"
@@ -77,72 +75,53 @@ export const VariablesView: React.FC = () => {
         {variables.length > 0 ? (
           <>
             {variables.map((v) => (
-              <div key={v.name}>
-                {/* Variable section header - DaVinci style */}
+              <div key={v.name} className="mb-2">
+                {/* Variable header */}
                 <div className="bg-zinc-800 border border-zinc-700 px-2 py-1 flex items-center justify-between">
                   <span className="text-xs font-mono text-zinc-300">{v.name}</span>
                   <button
                     onClick={() => removeVariable(v.name)}
-                    className="text-zinc-600 hover:text-zinc-400 transition-colors"
+                    className="text-zinc-600 hover:text-zinc-400 transition-colors text-lg leading-none"
                   >
-                    <span className="text-xs">×</span>
+                    ×
                   </button>
                 </div>
                 
-                {/* Variable controls - tight spacing */}
-                <div className="bg-zinc-950 border-x border-b border-zinc-700 p-2 mb-1">
+                {/* Variable controls */}
+                <div className="bg-zinc-950 border-x border-b border-zinc-700 p-2">
                   <div className="grid grid-cols-4 gap-2">
-                    {/* Current Value - highlighted */}
-                    <div>
-                      <label className="block text-zinc-500 mb-0.5" style={{ fontSize: '10px' }}>
-                        CURRENT
-                      </label>
-                      <div className="bg-zinc-900 border border-zinc-700 px-2 py-1 text-center">
-                        <span className="text-sm font-bold text-orange-500">
-                          {v.value}
-                        </span>
-                      </div>
-                    </div>
+                    {/* Current - read only */}
+                    <NumberInput
+                      label="Current"
+                      value={v.value}
+                      onChange={() => {}} // read-only
+                      disabled={true}
+                    />
 
-                    {/* Initial Value */}
+                    {/* Initial */}
                     <NumberInput
                       label="Initial"
                       value={v.initialValue}
-                      onChange={(e) =>
-                        patchVar(v.name, { 
-                          initialValue: parseInt(e.target.value) || 0,
-                          value: parseInt(e.target.value) || 0 
-                        })
-                      }
-                      compact
+                      onChange={(val) => patchVar(v.name, { 
+                        initialValue: val,
+                        value: val 
+                      })}
                     />
 
                     {/* Min */}
-                    <Input
+                    <NumberInput
                       label="Min"
-                      type="number"
                       value={typeof v.min === "number" ? v.min : ""}
                       placeholder="—"
-                      onChange={(e) =>
-                        patchVar(v.name, {
-                          min: e.target.value === "" ? undefined : parseInt(e.target.value) || 0,
-                        })
-                      }
-                      compact
+                      onChange={(val) => patchVar(v.name, { min: val })}
                     />
 
                     {/* Max */}
-                    <Input
+                    <NumberInput
                       label="Max"
-                      type="number"
                       value={typeof v.max === "number" ? v.max : ""}
                       placeholder="—"
-                      onChange={(e) =>
-                        patchVar(v.name, {
-                          max: e.target.value === "" ? undefined : parseInt(e.target.value) || 0,
-                        })
-                      }
-                      compact
+                      onChange={(val) => patchVar(v.name, { max: val })}
                     />
                   </div>
                 </div>
@@ -165,12 +144,9 @@ export const VariablesView: React.FC = () => {
         )}
       </PanelContent>
 
-      {/* Status bar */}
-      <div className="h-5 bg-zinc-950 border-t border-zinc-800 px-2 flex items-center text-zinc-600">
-        <span style={{ fontSize: '10px' }}>
-          Variable System
-        </span>
-      </div>
+      <PanelFooter>
+        Variable System
+      </PanelFooter>
     </Panel>
   );
 };

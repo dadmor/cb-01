@@ -1,23 +1,22 @@
-// src/views/VideoView.tsx - REFACTORED
+// src/views/VideoView.tsx
 import React from 'react';
 import { VideoList } from './video/VideoList';
 import { VideoPlayer } from './video/VideoPlayer';
 import { VideoSceneLinker } from './video/VideoSceneLinker';
-import { FlexContainer } from '@/components/ui';
 
 export const VideoView: React.FC = () => {
   return (
-    <FlexContainer direction="row" fullHeight className="bg-zinc-900">
+    <div className="flex h-full bg-zinc-900">
       {/* Left: Video List (Media Pool) */}
       <VideoList />
       
       {/* Center: Video Player */}
-      <FlexContainer direction="col" flex>
+      <div className="flex-1 flex flex-col">
         <VideoPlayer />
-      </FlexContainer>
+      </div>
       
       {/* Right: Scene Linker Sidebar */}
       <VideoSceneLinker />
-    </FlexContainer>
+    </div>
   );
 };
