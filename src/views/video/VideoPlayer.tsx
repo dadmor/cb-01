@@ -6,7 +6,7 @@ import { usePlayStore } from '@/modules/play/usePlayStore';
 
 export const VideoPlayer: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  
+
   const {
     currentVideoUrl,
     isPlaying,
@@ -21,7 +21,6 @@ export const VideoPlayer: React.FC = () => {
 
   const onVideoEnded = usePlayStore((s) => s.onVideoEnded);
 
-  // Setup video event listeners
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -41,7 +40,6 @@ export const VideoPlayer: React.FC = () => {
     video.addEventListener('pause', handlePause);
     video.addEventListener('ended', handleEnded);
 
-    // Set initial volume
     video.volume = volume / 100;
 
     return () => {
@@ -56,11 +54,8 @@ export const VideoPlayer: React.FC = () => {
   const togglePlayPause = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) {
-      void v.play();
-    } else {
-      v.pause();
-    }
+    if (v.paused) void v.play();
+    else v.pause();
   };
 
   const seek = (time: number) => {
@@ -76,7 +71,7 @@ export const VideoPlayer: React.FC = () => {
     const mins = Math.floor(secs / 60);
     const rest = secs % 60;
     return `${mins}:${rest.toString().padStart(2, '0')}`;
-    };
+  };
 
   if (!currentVideoUrl) {
     return (
@@ -93,6 +88,9 @@ export const VideoPlayer: React.FC = () => {
     );
   }
 
+  // Fit bez cropa, niezależnie od proporcji.
+  const fitClass = 'object-contain';
+
   return (
     <div className="flex-1 flex flex-col bg-black min-h-0">
       {/* Video Display */}
@@ -100,7 +98,7 @@ export const VideoPlayer: React.FC = () => {
         <video
           ref={videoRef}
           src={currentVideoUrl}
-          className="w-full h-full max-w-full max-h-full object-contain"
+          className={`w-full h-full max-w-full max-h-full ${fitClass}`}
           playsInline
           autoPlay
           controls={false}
@@ -108,9 +106,8 @@ export const VideoPlayer: React.FC = () => {
         />
       </div>
 
-      {/* Controls */}
+      {/* Controls (stała wysokość kontrolek OK) */}
       <div className="h-24 shrink-0 bg-[#252525] border-t border-[#0a0a0a] p-3">
-        {/* Progress Bar */}
         <div className="mb-3">
           <div className="flex items-center gap-2 text-[10px] text-[#666] mb-1">
             <span>{formatTime(currentTime)}</span>
@@ -137,7 +134,6 @@ export const VideoPlayer: React.FC = () => {
           </div>
         </div>
 
-        {/* Playback Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
@@ -163,7 +159,6 @@ export const VideoPlayer: React.FC = () => {
             </button>
           </div>
 
-          {/* Volume */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-[#666]">Vol</span>
             <input
@@ -179,7 +174,7 @@ export const VideoPlayer: React.FC = () => {
                 }
               }}
               className="w-24"
-              style={{ height: '4px', backgroundColor: '#1a1a1a', outline: 'none' }}
+              style={{ height: "4px", backgroundColor: "#1a1a1a", outline: "none" }}
               aria-label="Volume"
             />
             <span className="text-[10px] text-[#666] w-8 text-right">{volume}%</span>
@@ -189,4 +184,3 @@ export const VideoPlayer: React.FC = () => {
     </div>
   );
 };
-

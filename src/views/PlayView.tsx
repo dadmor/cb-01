@@ -19,14 +19,14 @@ import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
 import { evalConditions, applyEffects } from "@/modules/variables/logic";
 import { VideoPlayer } from "@/views/video/VideoPlayer";
 import { useVideoPlayerStore } from "@/modules/video";
-import { Clock } from 'lucide-react';
-import { 
-  Button, 
-  Card, 
-  Panel, 
-  PanelContent, 
-  PanelFooter, 
-  PanelHeader
+import { Clock } from "lucide-react";
+import {
+  Button,
+  Card,
+  Panel,
+  PanelContent,
+  PanelFooter,
+  PanelHeader,
 } from "@/components/ui";
 
 const nodeTypes: NodeTypes = {
@@ -61,7 +61,7 @@ export const PlayView: React.FC = () => {
   const videoUrl = useVideoPlayerStore((s) => s.currentVideoUrl);
   const videoDur = useVideoPlayerStore((s) => s.duration);
   const videoTime = useVideoPlayerStore((s) => s.currentTime);
-  
+
   const secondsLeft = React.useMemo(() => {
     if (videoUrl && Number.isFinite(videoDur) && Number.isFinite(videoTime)) {
       return Math.ceil(Math.max(0, (videoDur || 0) - (videoTime || 0)));
@@ -129,10 +129,10 @@ export const PlayView: React.FC = () => {
     (choiceId: string) => {
       const choiceNode = nodes.find((n) => n.id === choiceId);
       if (!choiceNode || !isChoiceNode(choiceNode)) return;
-      
+
       const nextScene = getTargetSceneForChoice(choiceId);
       if (!nextScene) return;
-      
+
       const unlocked = evalConditions(nextScene.data.conditions, variables);
       if (!unlocked) return;
 
@@ -175,9 +175,9 @@ export const PlayView: React.FC = () => {
   );
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full min-h-0">
       {/* Canvas with flow graph */}
-      <div className="flex-1 bg-zinc-950">
+      <div className="flex-1 bg-zinc-950 min-h-0">
         <ReactFlow
           nodes={cleanNodes}
           edges={cleanEdges}
@@ -201,9 +201,9 @@ export const PlayView: React.FC = () => {
       </div>
 
       {/* Control sidebar */}
-      <Panel className="w-[420px] border-l border-zinc-800">
-        <PanelHeader 
-          title="Play" 
+      <Panel className="w-[420px] border-l border-zinc-800 flex flex-col min-h-0">
+        <PanelHeader
+          title="Play"
           actions={
             <div className="flex items-center gap-2">
               {secondsLeft !== null && (
@@ -219,26 +219,36 @@ export const PlayView: React.FC = () => {
           }
         />
 
-        {/* Video section */}
-        <div className="h-[280px] border-b border-zinc-800 flex flex-col min-h-0">
-          <VideoPlayer />
-        </div>
+        {/* STACK: Video (card) -> Title (card) -> Choices (card) */}
+        <PanelContent className="space-y-3">
+          {/* Video */}
+          <Card title="Video" className="p-0 overflow-hidden">
+            {/* Umiar wysokości: responsywnie (ratio) + miejsce na kontrolki */}
+            <div className="h-[360px] md:h-[420px] lg:h-[480px] flex flex-col min-h-0">
+              <VideoPlayer />
+            </div>
+          </Card>
 
-        {/* Info and choices */}
-        <PanelContent>
-          <Card title="Current Scene">
-            <span className={`text-xs ${currentScene ? 'text-zinc-300' : 'text-zinc-600'}`}>
+          {/* Title */}
+          <Card title="Title">
+            <span
+              className={`text-xs ${
+                currentScene ? "text-zinc-300" : "text-zinc-600"
+              }`}
+            >
               {currentScene ? currentScene.data.label : "—"}
             </span>
           </Card>
 
-          <Card title="Choices" className="mt-3">
+          {/* Choices */}
+          <Card title="Choices">
             {choices.length > 0 ? (
               <div className="space-y-2">
                 {choices.map((c) => {
                   const target = getTargetSceneForChoice(c.id);
-                  const unlocked = !!target && evalConditions(target.data.conditions, variables);
-                  
+                  const unlocked =
+                    !!target && evalConditions(target.data.conditions, variables);
+
                   return (
                     <Button
                       key={c.id}
@@ -261,7 +271,9 @@ export const PlayView: React.FC = () => {
         </PanelContent>
 
         <PanelFooter>
-          <span>{nodes.length} nodes • {edges.length} edges</span>
+          <span>
+            {nodes.length} nodes • {edges.length} edges
+          </span>
           <span className="ml-auto">
             {currentScene ? `Scene: ${currentScene.id}` : "Ready"}
           </span>
