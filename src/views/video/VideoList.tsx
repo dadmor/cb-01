@@ -107,7 +107,7 @@ export const VideoList: React.FC = () => {
     <Panel className="w-80 border-r border-zinc-800 flex flex-col">
       <PanelHeader 
         title="Media Pool" 
-        compact
+
         actions={
           <Button
             variant="ghost"
@@ -151,7 +151,7 @@ export const VideoList: React.FC = () => {
         </div>
       )}
 
-      <PanelContent className="flex-1 overflow-y-auto" noPadding>
+      <PanelContent className="flex-1 overflow-y-auto">
         {!isInitialized ? (
           <div className="text-center py-12">
             <div className="animate-pulse">

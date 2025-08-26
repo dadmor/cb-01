@@ -1,6 +1,7 @@
+// ------ src/components/ui/Layout.tsx ------
+import React from "react";
 import { Panel } from "./Panel";
 
-// ------ src/components/ui/Layout.tsx ------
 interface ContainerProps {
   children: React.ReactNode;
   className?: string;
@@ -18,7 +19,13 @@ export const Canvas: React.FC<ContainerProps> = ({ children, className = '' }) =
   </div>
 );
 
-export const Sidebar: React.FC<ContainerProps & { width?: string }> = ({ 
+interface LayoutSidebarProps extends ContainerProps {
+  width?: string;
+}
+
+// Uwaga: Zmieniono nazwę z `Sidebar` na `LayoutSidebar`,
+// aby nie kolidowała z komponentem o tej samej nazwie w `./Sidebar.tsx`.
+export const LayoutSidebar: React.FC<LayoutSidebarProps> = ({ 
   children, 
   width = 'w-96',
   className = '' 

@@ -60,7 +60,7 @@ export const VideoSceneLinker: React.FC = () => {
 
   return (
     <Panel className="w-96 border-l border-zinc-800 flex flex-col">
-      <PanelHeader title="Scene Linker" compact />
+      <PanelHeader title="Scene Linker"  />
 
       {/* Current video */}
       {currentVideo && (
@@ -77,11 +77,11 @@ export const VideoSceneLinker: React.FC = () => {
       {/* Search */}
       <div className="p-3 border-b border-zinc-800">
         <Input
-          icon={Search}
+
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search scenes..."
-          compact
+         
         />
       </div>
 

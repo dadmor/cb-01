@@ -42,7 +42,7 @@ export const StoryView: React.FC = () => {
 
       {/* Right Panel */}
       <Panel className="w-[350px] border-l border-zinc-800">
-        <PanelHeader title="Story Overview" compact />
+        <PanelHeader title="Story Overview"  />
         
         <PanelContent>
           <EmptyState
