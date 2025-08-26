@@ -13,6 +13,7 @@ import {
   MarkerType,
   useOnSelectionChange,
   Connection,
+  ConnectionLineType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -29,7 +30,7 @@ const nodeTypes: NodeTypes = {
 };
 
 const defaultEdgeOptions = {
-  type: "smoothstep" as const,
+  type: "step" as const,
   markerEnd: { type: MarkerType.Arrow },
   style: { strokeWidth: 2, stroke: "#52525b" },
 };
@@ -98,6 +99,7 @@ export const FlowCanvas: React.FC = React.memo(() => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         defaultEdgeOptions={defaultEdgeOptions}
+        connectionLineType={ConnectionLineType.Step}
         deleteKeyCode={DELETE_KEYS}
         snapToGrid
         snapGrid={SNAP_GRID}
