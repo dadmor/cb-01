@@ -1,57 +1,68 @@
-// src/views/StoryView.tsx
+// src/views/StoryView.tsx - REFACTORED
 import React from 'react';
 import { FlowCanvas } from '@/modules/flow/FlowCanvas';
 import { GitBranch, Info } from 'lucide-react';
+import { 
+  Panel, 
+  PanelHeader, 
+  PanelContent,
+  Card,
+  FlexContainer,
+  EmptyState,
+  StatusText
+} from '@/components/ui';
+
+// Komponent legendy
+const FlowLegend: React.FC = () => (
+  <FlexContainer direction="col" className="space-y-2 mt-4">
+    <FlexContainer className="items-center gap-2">
+      <div className="w-3 h-3 bg-zinc-800 border border-zinc-700"></div>
+      <StatusText variant="muted" size="xs">Scene nodes</StatusText>
+    </FlexContainer>
+    <FlexContainer className="items-center gap-2">
+      <div className="w-3 h-3 bg-zinc-700 border border-zinc-600"></div>
+      <StatusText variant="muted" size="xs">Choice nodes</StatusText>
+    </FlexContainer>
+    <FlexContainer className="items-center gap-2">
+      <div className="w-8 h-0.5 bg-orange-500"></div>
+      <StatusText variant="muted" size="xs">Conditional paths</StatusText>
+    </FlexContainer>
+  </FlexContainer>
+);
 
 export const StoryView: React.FC = () => {
   return (
-    <div className="h-full flex">
+    <FlexContainer direction="row" fullHeight>
       {/* Main Canvas */}
-      <div className="flex-1 flex flex-col bg-[#1a1a1a]">
-        <div className="flex-1 relative">
+      <FlexContainer flex direction="col" className="bg-zinc-950">
+        <Panel className="flex-1">
           <FlowCanvas />
-        </div>
-      </div>
+        </Panel>
+      </FlexContainer>
 
-      {/* Right Panel - Empty for now */}
-      <div className="w-[350px] bg-[#1e1e1e] border-l border-[#0a0a0a]">
-        <div className="h-8 bg-[#252525] border-b border-[#0a0a0a] flex items-center px-3">
-          <span className="text-xs text-[#999] font-medium">STORY OVERVIEW</span>
-        </div>
+      {/* Right Panel */}
+      <Panel className="w-[350px] border-l border-zinc-800">
+        <PanelHeader title="Story Overview" compact />
         
-        <div className="p-6 text-center">
-          <GitBranch className="w-12 h-12 mx-auto mb-4 text-[#666]" />
-          <p className="text-[#666] text-sm mb-4">
-            Story flow visualization
-          </p>
-          
-          <div className="bg-[#252525] border border-[#2a2a2a] p-4 text-left">
-            <div className="flex items-start gap-2 mb-3">
-              <Info className="w-4 h-4 text-[#999] mt-0.5" />
-              <div>
-                <p className="text-xs text-[#999] leading-relaxed">
-                  This view shows your complete story structure. Add scenes and choices to build branching narratives.
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-2 mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-zinc-800 border border-zinc-700"></div>
-                <span className="text-xs text-[#999]">Scene nodes</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-zinc-700 border border-zinc-600"></div>
-                <span className="text-xs text-[#999]">Choice nodes</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-orange-500"></div>
-                <span className="text-xs text-[#999]">Conditional paths</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        <PanelContent>
+          <EmptyState
+            icon={<GitBranch className="w-12 h-12 text-zinc-600" />}
+            title="Story flow visualization"
+            action={
+              <Card compact>
+                <FlexContainer className="items-start gap-2 mb-3">
+                  <Info className="w-4 h-4 text-zinc-500 mt-0.5" />
+                  <StatusText variant="muted" size="xs" className="leading-relaxed">
+                    This view shows your complete story structure. Add scenes and choices to build branching narratives.
+                  </StatusText>
+                </FlexContainer>
+                
+                <FlowLegend />
+              </Card>
+            }
+          />
+        </PanelContent>
+      </Panel>
+    </FlexContainer>
   );
 };

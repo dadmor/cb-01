@@ -1,8 +1,15 @@
-// src/modules/video/components/VideoList.tsx
+// src/views/video/VideoList.tsx
 import React, { useRef } from 'react';
 import { Film, Upload, X, HardDrive } from 'lucide-react';
 import { useVideoPlayerStore, useVideoStorage } from '@/modules/video';
-
+import { 
+  Panel, 
+  PanelHeader, 
+  PanelContent, 
+  PanelFooter,
+  Button,
+  Card
+} from '@/components/ui';
 
 export const VideoList: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -26,7 +33,6 @@ export const VideoList: React.FC = () => {
   const [storageInfo, setStorageInfo] = React.useState({ usage: 0, quota: 0 });
   const [uploadingCount, setUploadingCount] = React.useState(0);
 
-  // Update storage info
   React.useEffect(() => {
     if (isInitialized) {
       getStorageEstimate().then(setStorageInfo);
@@ -43,7 +49,6 @@ export const VideoList: React.FC = () => {
       try {
         const id = await storeVideo(file);
         
-        // Auto-select first video
         if (videos.length === 0 && !currentVideoId) {
           handleSelectVideo(id);
         }
@@ -55,7 +60,6 @@ export const VideoList: React.FC = () => {
     
     setUploadingCount(0);
     
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -83,7 +87,6 @@ export const VideoList: React.FC = () => {
       
       if (currentVideoId === id) {
         clearCurrentVideo();
-        // Auto-select next video
         const remaining = videos.filter(v => v.id !== id);
         if (remaining.length > 0) {
           handleSelectVideo(remaining[0].id);
@@ -101,129 +104,117 @@ export const VideoList: React.FC = () => {
   };
 
   return (
-    <div className="w-80 bg-[#1e1e1e] border-r border-[#0a0a0a] flex flex-col">
-      {/* Header */}
-      <div className="h-8 bg-[#252525] border-b border-[#0a0a0a] flex items-center justify-between px-3">
-        <span className="text-xs text-[#999] font-medium">MEDIA POOL</span>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={!isInitialized || uploadingCount > 0}
-          className="text-xs text-[#999] hover:text-white transition-colors disabled:opacity-50"
-        >
-          {uploadingCount > 0 ? (
-            <span className="text-[10px]">Uploading {uploadingCount}...</span>
-          ) : (
-            <Upload className="w-4 h-4" />
-          )}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="video/*"
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-      </div>
+    <Panel className="w-80 border-r border-zinc-800 flex flex-col">
+      <PanelHeader 
+        title="Media Pool" 
+        compact
+        actions={
+          <Button
+            variant="ghost"
+            size="xs"
+            icon={Upload}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!isInitialized || uploadingCount > 0}
+          >
+            {uploadingCount > 0 && `Uploading ${uploadingCount}...`}
+          </Button>
+        }
+      />
+      
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        multiple
+        onChange={handleFileSelect}
+        className="hidden"
+      />
 
       {/* Storage indicator */}
       {isInitialized && (
-        <div className="px-3 py-2 bg-[#1a1a1a] border-b border-[#0a0a0a]">
-          <div className="flex items-center justify-between text-[10px] text-[#666] mb-1">
-            <span className="flex items-center gap-1">
+        <div className="px-3 py-2 bg-zinc-950 border-b border-zinc-800">
+          <div className="flex items-center justify-between mb-1" style={{ fontSize: '10px' }}>
+            <span className="flex items-center gap-1 text-zinc-600">
               <HardDrive className="w-3 h-3" />
               Browser Storage
             </span>
-            <span>{formatBytes(storageInfo.usage)} / {formatBytes(storageInfo.quota)}</span>
+            <span className="text-zinc-600">
+              {formatBytes(storageInfo.usage)} / {formatBytes(storageInfo.quota)}
+            </span>
           </div>
-          <div className="h-1 bg-[#0a0a0a] rounded overflow-hidden">
+          <div className="h-1 bg-zinc-950 rounded overflow-hidden">
             <div 
-              className="h-full bg-[#E84E36] transition-all"
+              className="h-full bg-orange-600 transition-all"
               style={{ width: `${(storageInfo.usage / storageInfo.quota) * 100}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Video list */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <PanelContent className="flex-1 overflow-y-auto" noPadding>
         {!isInitialized ? (
           <div className="text-center py-12">
             <div className="animate-pulse">
-              <HardDrive className="w-12 h-12 mx-auto mb-4 text-[#444]" />
-              <p className="text-[#666] text-xs">Initializing storage...</p>
+              <HardDrive className="w-12 h-12 mx-auto mb-4 text-zinc-600" />
+              <p className="text-zinc-600 text-xs">Initializing storage...</p>
             </div>
           </div>
         ) : videos.length === 0 ? (
           <div className="text-center py-12">
-            <Film className="w-12 h-12 mx-auto mb-4 text-[#444]" />
-            <p className="text-[#666] text-xs mb-4">No videos in storage</p>
-            <button
+            <Film className="w-12 h-12 mx-auto mb-4 text-zinc-600" />
+            <p className="text-zinc-600 text-xs mb-4">No videos in storage</p>
+            <Button
+              variant="default"
+              icon={Upload}
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingCount > 0}
-              className="px-4 py-2 bg-[#2a2a2a] text-[#999] text-xs border border-[#3a3a3a] hover:bg-[#333] hover:text-white transition-colors disabled:opacity-50"
             >
               Import Videos
-            </button>
+            </Button>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="p-2 space-y-1">
             {videos.map((video) => (
-              <div
+              <Card
                 key={video.id}
-                onClick={() => handleSelectVideo(video.id)}
-                className={`p-3 bg-[#1a1a1a] border-2 cursor-pointer transition-all ${
-                  currentVideoId === video.id
-                    ? 'border-[#E84E36]'
-                    : 'border-transparent hover:border-[#3a3a3a]'
-                }`}
+                selected={currentVideoId === video.id}
+                compact
+                className="cursor-pointer"
+                onClose={() => handleDeleteVideo(video.id)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Film className="w-4 h-4 text-[#666] flex-shrink-0" />
-                      <p className="text-xs text-[#ccc] truncate">{video.fileName}</p>
-                    </div>
-                    <div className="flex items-center gap-3 text-[10px] text-[#666]">
-                      <span>{formatBytes(video.fileSize)}</span>
-                    </div>
+                <div onClick={() => handleSelectVideo(video.id)}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Film className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                    <p className="text-xs text-zinc-300 truncate">{video.fileName}</p>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteVideo(video.id);
-                    }}
-                    className="p-1 hover:bg-[#2a2a2a] transition-colors"
-                  >
-                    <X className="w-3 h-3 text-[#666] hover:text-red-500" />
-                  </button>
+                  <div className="flex items-center gap-3 text-zinc-600" style={{ fontSize: '10px' }}>
+                    <span>{formatBytes(video.fileSize)}</span>
+                  </div>
+                  
+                  {video.thumbnails && video.thumbnails.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      {video.thumbnails.slice(0, 4).map((thumb, idx) => (
+                        <img 
+                          key={idx} 
+                          src={thumb} 
+                          className="w-1/4 h-auto opacity-50"
+                          alt=""
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                
-                {/* Thumbnails preview */}
-                {video.thumbnails && video.thumbnails.length > 0 && (
-                  <div className="flex gap-1 mt-2">
-                    {video.thumbnails.slice(0, 4).map((thumb, idx) => (
-                      <img 
-                        key={idx} 
-                        src={thumb} 
-                        className="w-1/4 h-auto opacity-50"
-                        alt=""
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              </Card>
             ))}
           </div>
         )}
-      </div>
+      </PanelContent>
 
-      {/* Footer */}
-      <div className="h-6 bg-[#1a1a1a] border-t border-[#0a0a0a] flex items-center px-3">
-        <span className="text-[10px] text-[#666]">
+      <PanelFooter>
+        <span style={{ fontSize: '10px' }}>
           {videos.length} video{videos.length !== 1 ? 's' : ''} stored
         </span>
-      </div>
-    </div>
+      </PanelFooter>
+    </Panel>
   );
 };
