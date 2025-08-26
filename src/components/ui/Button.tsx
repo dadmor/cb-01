@@ -3,7 +3,7 @@ import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'primary' | 'ghost';
+  variant?: 'default' | 'primary' | 'ghost' | 'tool';
   size?: 'xs' | 'sm';
   icon?: LucideIcon;
 }
@@ -17,9 +17,10 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const variantClasses = {
-    default: 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700',
-    primary: 'bg-orange-600 text-white hover:bg-orange-500',
-    ghost: 'bg-transparent text-zinc-400 hover:bg-zinc-800'
+    default: 'bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700',
+    primary: 'bg-red-600 text-white hover:bg-red-500 border border-red-700',
+    ghost: 'bg-transparent text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200',
+    tool: 'bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800'
   };
   
   const sizeClasses = {
@@ -30,7 +31,7 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={`
-        transition-colors disabled:opacity-50
+        transition-all duration-150 disabled:opacity-30
         ${variantClasses[variant]}
         ${sizeClasses[size]}
         ${className}

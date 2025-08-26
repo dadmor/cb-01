@@ -1,4 +1,4 @@
-// src/components/ui/Card.tsx
+// ------ src/components/ui/Card.tsx ------
 import React from "react";
 
 interface CardProps {
@@ -7,7 +7,6 @@ interface CardProps {
   selected?: boolean;
   compact?: boolean;
   className?: string;
-  /** Opcjonalny krzyżyk zamknięcia w prawym górnym rogu */
   onClose?: () => void;
 }
 
@@ -21,21 +20,21 @@ export const Card: React.FC<CardProps> = ({
 }) => (
   <div
     className={`
-      bg-zinc-900 border rounded
-      ${selected ? "border-orange-500" : "border-zinc-800"}
-      ${compact ? "p-2" : "p-3"}
+      bg-neutral-900 border rounded-sm
+      ${selected ? "border-red-600 shadow-lg shadow-red-900/20" : "border-neutral-800"}
+      ${compact ? "p-1" : "p-2"}
       ${className}
     `}
   >
     {title && (
-      <div className="h-6 bg-zinc-800 border border-zinc-700 rounded-sm px-2 mb-2 flex items-center justify-between">
-        <span className="text-xs text-zinc-400 uppercase tracking-wider">
+      <div className="h-5 bg-gradient-to-r from-neutral-800 to-neutral-900 border border-neutral-700 px-1 mb-1 flex items-center justify-between">
+        <span className="text-xs text-neutral-400 font-medium tracking-wide">
           {title}
         </span>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-300 text-sm leading-none"
+            className="text-neutral-500 hover:text-neutral-200 text-xs leading-none transition-colors"
             aria-label="Close"
           >
             ×
@@ -43,7 +42,6 @@ export const Card: React.FC<CardProps> = ({
         )}
       </div>
     )}
-    {/* Jeśli tytuł był, padding już był na headerze; wnętrze robi minimalny odstęp */}
-    <div className={compact ? "" : ""}>{children}</div>
+    <div>{children}</div>
   </div>
 );

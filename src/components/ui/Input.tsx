@@ -1,4 +1,6 @@
 // ------ src/components/ui/Input.tsx ------
+import React from 'react';
+
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
@@ -6,14 +8,15 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export const Input: React.FC<InputProps> = ({ label, className = '', ...props }) => (
   <div className="w-full">
     {label && (
-      <label className="block text-zinc-500 mb-1 text-[10px] uppercase">
+      <label className="block text-neutral-500 mb-1 text-[10px] uppercase font-medium">
         {label}
       </label>
     )}
     <input
       className={`
-        w-full bg-zinc-950 border border-zinc-800 px-2 py-0.5
-        text-zinc-200 text-xs focus:border-zinc-600 focus:outline-none
+        w-full bg-black border border-neutral-800 px-2 py-0.5
+        text-neutral-200 text-xs focus:border-red-700 focus:outline-none
+        placeholder-neutral-600
         ${className}
       `}
       {...props}
@@ -29,14 +32,14 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 export const Select: React.FC<SelectProps> = ({ label, options, className = '', ...props }) => (
   <div className="w-full">
     {label && (
-      <label className="block text-zinc-500 mb-1 text-[10px] uppercase">
+      <label className="block text-neutral-500 mb-1 text-[10px] uppercase font-medium">
         {label}
       </label>
     )}
     <select
       className={`
-        w-full bg-zinc-950 border border-zinc-800 px-2 py-0.5
-        text-zinc-200 text-xs focus:border-zinc-600 focus:outline-none
+        w-full bg-black border border-neutral-800 px-2 py-0.5
+        text-neutral-200 text-xs focus:border-red-700 focus:outline-none
         ${className}
       `}
       {...props}

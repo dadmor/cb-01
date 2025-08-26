@@ -1,4 +1,4 @@
-// src/components/ui/Flex.tsx
+// ------ src/components/ui/Flex.tsx ------
 import React from "react";
 
 type Direction = "row" | "col";
@@ -7,9 +7,7 @@ interface FlexContainerProps {
   children: React.ReactNode;
   className?: string;
   direction?: Direction;
-  /** dodaje `flex-1` gdy true */
   flex?: boolean;
-  /** dodaje `h-full` gdy true */
   fullHeight?: boolean;
 }
 
