@@ -1,9 +1,9 @@
 // src/views/DecisionsView.tsx
 import React from 'react';
 import { FlowCanvas } from '@/modules/flow/FlowCanvas';
-import { Sidebar } from './decisions/Sidebar';
+import { Sidebar } from './storymap/Sidebar';
 
-export const DecisionsView: React.FC = () => {
+export const StorymapView: React.FC = () => {
   return (
     <div className="h-full flex">
       {/* Main Canvas */}

@@ -17,6 +17,8 @@ import { ChoiceNode } from "@/modules/flow/nodes/ChoiceNode";
 import { usePlayStore } from "@/modules/play/usePlayStore";
 import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
 import { evalConditions, applyEffects } from "@/modules/variables/logic";
+import { VideoPlayer } from "@/views/video/VideoPlayer";
+import { useVideoPlayerStore } from "@/modules/video";
 
 const nodeTypes: NodeTypes = {
   scene: SceneNode,
@@ -46,6 +48,17 @@ export const PlayView: React.FC = () => {
 
   const lastCenteredRef = React.useRef<string | null>(null);
   const isFirstRender = React.useRef(true);
+
+  // ▼ DANE PLAYERA WIDEO — do wyświetlenia pozostałego czasu
+  const videoUrl = useVideoPlayerStore((s) => s.currentVideoUrl);
+  const videoDur = useVideoPlayerStore((s) => s.duration);
+  const videoTime = useVideoPlayerStore((s) => s.currentTime);
+  const secondsLeft = React.useMemo(() => {
+    if (videoUrl && Number.isFinite(videoDur) && Number.isFinite(videoTime)) {
+      return Math.ceil(Math.max(0, (videoDur || 0) - (videoTime || 0)));
+    }
+    return null;
+  }, [videoUrl, videoDur, videoTime]);
 
   React.useEffect(() => {
     if (!currentSceneId) start();
@@ -103,17 +116,26 @@ export const PlayView: React.FC = () => {
     [edges, nodes]
   );
 
+  const continueViaChoice = React.useCallback(
+    (choiceId: string) => {
+      const choiceNode = nodes.find((n) => n.id === choiceId);
+      if (!choiceNode || !isChoiceNode(choiceNode)) return;
+      const nextScene = getTargetSceneForChoice(choiceId);
+      if (!nextScene) return;
+      const unlocked = evalConditions(nextScene.data.conditions, variables);
+      if (!unlocked) return;
+
+      const nextVars = applyEffects(choiceNode.data.effects || {}, variables);
+      loadVariables(nextVars);
+
+      lastCenteredRef.current = null;
+      goTo(nextScene.id);
+    },
+    [nodes, getTargetSceneForChoice, variables, loadVariables, goTo]
+  );
+
   const handleChoose = (choiceId: string) => {
-    const choiceNode = nodes.find((n) => n.id === choiceId);
-    if (!choiceNode || !isChoiceNode(choiceNode)) return;
-    const nextScene = getTargetSceneForChoice(choiceId);
-    if (!nextScene) return;
-    const unlocked = evalConditions(nextScene.data.conditions, variables);
-    if (!unlocked) return;
-    const nextVars = applyEffects(choiceNode.data.effects || {}, variables);
-    loadVariables(nextVars);
-    lastCenteredRef.current = null;
-    goTo(nextScene.id);
+    continueViaChoice(choiceId);
   };
 
   const handleRestart = () => {
@@ -147,6 +169,7 @@ export const PlayView: React.FC = () => {
 
   return (
     <div className="h-full flex">
+      {/* Lewy panel: graf */}
       <div className="flex-1 relative">
         <ReactFlow
           nodes={cleanNodes}
@@ -170,12 +193,15 @@ export const PlayView: React.FC = () => {
         </ReactFlow>
       </div>
 
-      {/* Panel boczny */}
-      <div className="w-[350px] bg-zinc-800 border-l border-zinc-900 flex flex-col">
-        {/* Pasek tytułu – jak w przykładzie */}
+      {/* Prawy panel: PLAY + Video */}
+      <div className="w-[420px] bg-zinc-800 border-l border-zinc-900 flex flex-col">
+        {/* Pasek tytułu */}
         <div className="h-8 bg-zinc-600/20 border-b border-zinc-900 flex items-center px-3 justify-between">
           <span className="text-xs text-zinc-400 font-medium">PLAY</span>
           <div className="flex items-center gap-2">
+            <div className="text-[11px] text-zinc-300">
+              {secondsLeft !== null ? `${secondsLeft}s` : "—"}
+            </div>
             <button
               onClick={handleRestart}
               className="px-2 py-1 text-[11px] bg-zinc-800 border border-zinc-700 text-zinc-300 hover:bg-zinc-700 transition-colors"
@@ -185,6 +211,12 @@ export const PlayView: React.FC = () => {
           </div>
         </div>
 
+        {/* Sekcja wideo */}
+        <div className="h-[280px] border-b border-zinc-900 flex flex-col min-h-0">
+          <VideoPlayer />
+        </div>
+
+        {/* Informacje i wybory */}
         <div className="p-4 flex-1 overflow-y-auto">
           <div className="mb-4">
             <div className="text-[11px] text-zinc-500 mb-1">Current Scene</div>
@@ -193,7 +225,7 @@ export const PlayView: React.FC = () => {
             </div>
           </div>
 
-          <div>
+          <div className="mb-4">
             <div className="text-[11px] text-zinc-500 mb-2">Choices</div>
             <div className="flex flex-col gap-2">
               {choices.map((c) => {

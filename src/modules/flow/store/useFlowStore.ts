@@ -7,16 +7,15 @@ import {
   type NodeChange,
   type EdgeChange,
   type Edge,
+  type Connection,
+  addEdge,
 } from "@xyflow/react";
 
-import type { StoryNode, SceneNode, ChoiceNode } from "../types";
-import { isSceneNode, isChoiceNode } from "../types";
+import { isSceneNode, isChoiceNode, type StoryNode, type SceneNode, type ChoiceNode } from "../types";
 import { snapPositionToGrid } from "../gridHelpers";
 
-// ID startu
 export const START_NODE_ID = "scene_start";
 
-// Prosty generator ID
 const generateId = (prefix: "scene" | "choice") =>
   `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
 
@@ -27,19 +26,12 @@ interface FlowState {
 
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
-
-  // łączenie (dodaje bezpośrednią krawędź, jeśli nie istnieje)
-  createChoice: (sourceId: string, targetId: string) => void;
-
-  // NOWE: dodawanie choice (opcjonalnie z podpięciem od sceny)
+  addConnection: (conn: Connection | Edge) => void;
   addChoiceNode: (opts?: { connectFromId?: string }) => void;
-
   selectNode: (nodeId: string | null) => void;
   updateNode: (nodeId: string, data: any) => void;
   deleteNode: (nodeId: string) => void;
-
   addSceneNode: () => void;
-
   getNode: (nodeId: string) => StoryNode | undefined;
   getChoicesForScene: (sceneId: string) => ChoiceNode[];
 
@@ -54,7 +46,7 @@ const createInitialNodes = (): StoryNode[] => [
     type: "scene",
     position: snapPositionToGrid({ x: 250, y: 250 }),
     data: { label: "Start", durationSec: 5 },
-    deletable: false, // chronimy Start przed Delete/Backspace
+    deletable: false,
   } as SceneNode,
 ];
 
@@ -75,70 +67,31 @@ export const useFlowStore = create<FlowState>()(
           edges: applyEdgeChanges(changes, state.edges),
         })),
 
-      createChoice: (sourceId, targetId) =>
+      // 🔑 tylko dodanie krawędzi
+      addConnection: (conn) =>
+        set((state) => ({ edges: addEdge(conn, state.edges) })),
+
+      // dodanie choice bez automatycznego pozycjonowania/łączenia
+      addChoiceNode: () =>
         set((state) => {
-          const s = state.nodes.find((n) => n.id === sourceId);
-          const t = state.nodes.find((n) => n.id === targetId);
-          if (!s || !t) return state;
-
-          const exists = state.edges.some(
-            (e) => e.source === sourceId && e.target === targetId
-          );
-          if (exists) return state;
-
-          return {
-            ...state,
-            edges: [
-              ...state.edges,
-              { id: `edge_${sourceId}_${targetId}`, source: sourceId, target: targetId },
-            ],
-          };
-        }),
-
-      // NOWE: dodaj choice (z sensowną pozycją); gdy podasz connectFromId (scena),
-      // utworzy też krawędź scena -> choice
-      addChoiceNode: (opts) =>
-        set((state) => {
-          const connectFromId = opts?.connectFromId;
-          const sourceScene = connectFromId
-            ? state.nodes.find((n) => n.id === connectFromId && isSceneNode(n)) as SceneNode | undefined
-            : undefined;
-
-          // pozycja: obok wskazanej sceny, albo pod najniższym węzłem
-          const position = sourceScene
-            ? snapPositionToGrid({ x: sourceScene.position.x + 200, y: sourceScene.position.y })
-            : snapPositionToGrid({
-                x: 400,
-                y: state.nodes.reduce((acc, n) => Math.max(acc, n.position.y), 250) + 100,
-              });
-
           const choiceId = generateId("choice");
           const newChoice: ChoiceNode = {
             id: choiceId,
             type: "choice",
-            position,
+            position: snapPositionToGrid({ x: 0, y: 0 }),
             data: {
               label: `Choice ${state.nodes.filter((n) => n.type === "choice").length + 1}`,
               effects: {},
             },
           };
 
-          const newEdges =
-            sourceScene
-              ? [
-                  ...state.edges,
-                  { id: `edge_${sourceScene.id}_${choiceId}`, source: sourceScene.id, target: choiceId },
-                ]
-              : state.edges;
-
           return {
             nodes: [...state.nodes, newChoice],
-            edges: newEdges,
+            edges: state.edges,
             selectedNodeId: newChoice.id,
           };
         }),
 
-      // ✅ Strażnik: aktualizuj tylko gdy wartość się zmienia (eliminuje pętlę renderów)
       selectNode: (nodeId) =>
         set((state) =>
           state.selectedNodeId === nodeId ? state : { selectedNodeId: nodeId }
@@ -152,7 +105,6 @@ export const useFlowStore = create<FlowState>()(
         })),
 
       deleteNode: (nodeId) => {
-        // dodatkowa blokada na poziomie store
         if (nodeId === START_NODE_ID) return;
 
         set((state) => {
@@ -162,12 +114,10 @@ export const useFlowStore = create<FlowState>()(
           const nodesToDelete = [nodeId];
           const edgesToDelete = new Set<string>();
 
-          // krawędzie dotykające węzła
           state.edges.forEach((e) => {
             if (e.source === nodeId || e.target === nodeId) edgesToDelete.add(e.id);
           });
 
-          // sprzątanie osieroconych choice (jeśli są w projekcie)
           if (isSceneNode(nodeToDelete)) {
             state.nodes.forEach((n) => {
               if (isChoiceNode(n)) {

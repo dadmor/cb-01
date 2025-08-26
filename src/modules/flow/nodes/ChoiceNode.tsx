@@ -51,7 +51,6 @@ export const ChoiceNode: React.FC<ChoiceNodeProps> = ({ data, selected }) => {
                   "flex items-center justify-center text-[9px] font-bold",
                   value > 0 ? "text-green-400" : "text-red-400"
                 )}
-                title={`${varName}: ${value > 0 ? "+" : ""}${value}`}
               >
                 {value > 0 ? "↑" : "↓"}
               </div>

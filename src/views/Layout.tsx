@@ -1,13 +1,14 @@
 // src/views/Layout.tsx
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useProjectIO } from "@/modules/project";
 import { useProjectStore } from "@/modules/project/store/useProjectStore";
-import { TabNavigation, Tab } from "./layout";
+import { TabNavigation, Tab, Logo } from "./layout";
 import { GitBranch, Sliders, Film, PlayCircle, Plus, Upload, Download } from "lucide-react";
 
 export const Layout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const projectTitle = useProjectStore((state) => state.projectTitle);
   const setProjectTitle = useProjectStore((state) => state.setProjectTitle);
@@ -43,7 +44,7 @@ export const Layout: React.FC = () => {
   };
 
   const tabs: Tab[] = [
-    { id: "decisions", path: "/decisions", label: "Story Map", icon: GitBranch },
+    { id: "storymap", path: "/storymap", label: "Story Map", icon: GitBranch },
     { id: "story", path: "/story", label: "Screen Play", icon: Sliders },
     { id: "variables", path: "/variables", label: "Variables", icon: Sliders },
     { id: "video", path: "/video", label: "Video", icon: Film },
@@ -58,10 +59,14 @@ export const Layout: React.FC = () => {
         {/* Header */}
         <header className="flex-shrink-0 h-10 bg-gradient-to-b from-zinc-950 to-zinc-900 border-b border-zinc-900">
           <div className="h-full flex items-center">
-            {/* Logo placeholder (prostokąt) */}
-            <div className="px-3 h-full flex items-center border-r border-zinc-900">
-              <div className="w-8 h-8 bg-orange-600" />
-            </div>
+            {/* Film Strip Logo */}
+            <button 
+              onClick={() => navigate('/')}
+              className="px-3 h-full flex items-center border-r border-zinc-900 hover:bg-zinc-800 transition-colors group"
+              title="Go to Projects"
+            >
+             <Logo/>
+            </button>
 
             {/* Menu */}
             <div className="flex items-center h-full">

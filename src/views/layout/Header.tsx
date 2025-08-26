@@ -1,7 +1,8 @@
 // ===== src/views/layout/Header.tsx =====
 import React from 'react';
-import { DaVinciLogo } from './DaVinciLogo';
+
 import { Plus, Home, Settings } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface HeaderProps {
   projectTitle: string;
@@ -23,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="h-full flex items-center">
         {/* Logo */}
         <div className="px-3 h-full flex items-center border-r border-[#0a0a0a]">
-          <DaVinciLogo />
+          <Logo />
         </div>
 
         {/* File Menu Bar */}

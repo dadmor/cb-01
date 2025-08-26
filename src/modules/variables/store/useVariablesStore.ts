@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Variable } from "../types";
+import { clampToBounds } from "../logic";
 
 interface VariablesState {
   variables: Variable[];
@@ -21,30 +22,33 @@ export const useVariablesStore = create<VariablesState>()(
   persist(
     (set) => ({
       variables: DEFAULT_VARIABLES,
-      
+
       updateVariable: (name, value) =>
         set((state) => ({
           variables: state.variables.map((v) =>
-            v.name === name ? { ...v, value } : v
+            v.name === name ? { ...v, value: clampToBounds(v, value) } : v
           ),
         })),
-        
+
       addVariable: (name) =>
         set((state) => ({
-          variables: [...state.variables, {
-            name,
-            value: 0,
-            initialValue: 0
-          }]
+          variables: [
+            ...state.variables,
+            {
+              name,
+              value: 0,
+              initialValue: 0,
+            },
+          ],
         })),
-        
+
       removeVariable: (name) =>
         set((state) => ({
-          variables: state.variables.filter(v => v.name !== name)
+          variables: state.variables.filter((v) => v.name !== name),
         })),
-        
+
       reset: () => set({ variables: DEFAULT_VARIABLES }),
-      
+
       loadVariables: (variables) => set({ variables }),
     }),
     {
