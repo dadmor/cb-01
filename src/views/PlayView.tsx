@@ -11,9 +11,9 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useFlowStore } from "@/modules/flow/store/useFlowStore";
-import { isSceneNode, isChoiceNode } from "@/modules/flow/types";
-import { SceneNode } from "@/modules/flow/nodes/SceneNode";
-import { ChoiceNode } from "@/modules/flow/nodes/ChoiceNode";
+import { isSceneNode, isChoiceNode, type SceneNode } from "@/modules/flow/types";
+import { SceneNode as SceneNodeComponent } from "@/modules/flow/nodes/SceneNode";
+import { ChoiceNode as ChoiceNodeComponent } from "@/modules/flow/nodes/ChoiceNode";
 import { usePlayStore } from "@/modules/play/usePlayStore";
 import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
 import { evalConditions, applyEffects } from "@/modules/variables/logic";
@@ -30,8 +30,8 @@ import {
 } from "@/components/ui";
 
 const nodeTypes: NodeTypes = {
-  scene: SceneNode,
-  choice: ChoiceNode,
+  scene: SceneNodeComponent,
+  choice: ChoiceNodeComponent,
 };
 
 const defaultEdgeOptions = {
@@ -115,34 +115,41 @@ export const PlayView: React.FC = () => {
     return getChoicesForScene(currentScene.id);
   }, [currentScene, getChoicesForScene]);
 
-  const getTargetSceneForChoice = React.useCallback(
-    (choiceId: string) => {
-      const e = edges.find((e) => e.source === choiceId);
-      if (!e) return undefined;
-      const n = nodes.find((n) => n.id === e.target);
-      return n && isSceneNode(n) ? n : undefined;
-    },
-    [edges, nodes]
-  );
+  // Struktura dla UI: Choice -> dostępne Scene za nim
+  const choicesWithTargets = React.useMemo(() => {
+    return choices.map(choice => {
+      // Znajdź wszystkie sceny za tym Choice
+      const outgoingEdges = edges.filter(e => e.source === choice.id);
+      const targetScenes = outgoingEdges
+        .map(e => nodes.find(n => n.id === e.target))
+        .filter((n): n is SceneNode => !!n && isSceneNode(n));
+      
+      // Filtruj tylko te które spełniają warunki
+      const availableScenes = targetScenes.filter(scene => 
+        evalConditions(scene.data.conditions, variables)
+      );
+      
+      return {
+        choice,
+        targets: availableScenes
+      };
+    }).filter(item => item.targets.length > 0); // Pokaż tylko Choice które prowadzą do dostępnych scen
+  }, [choices, edges, nodes, variables]);
 
-  const continueViaChoice = React.useCallback(
-    (choiceId: string) => {
-      const choiceNode = nodes.find((n) => n.id === choiceId);
-      if (!choiceNode || !isChoiceNode(choiceNode)) return;
+  const handleChoiceClick = React.useCallback(
+    (choiceId: string, targetSceneId: string) => {
+      const choice = nodes.find(n => n.id === choiceId);
+      if (!choice || !isChoiceNode(choice)) return;
 
-      const nextScene = getTargetSceneForChoice(choiceId);
-      if (!nextScene) return;
-
-      const unlocked = evalConditions(nextScene.data.conditions, variables);
-      if (!unlocked) return;
-
-      const nextVars = applyEffects(choiceNode.data.effects || {}, variables);
+      // Aplikuj efekty Choice
+      const nextVars = applyEffects(choice.data.effects || {}, variables);
       loadVariables(nextVars);
 
+      // Przejdź do wybranej sceny
       lastCenteredRef.current = null;
-      goTo(nextScene.id);
+      goTo(targetSceneId);
     },
-    [nodes, getTargetSceneForChoice, variables, loadVariables, goTo]
+    [nodes, variables, loadVariables, goTo]
   );
 
   const handleRestart = () => {
@@ -223,14 +230,13 @@ export const PlayView: React.FC = () => {
         <PanelContent className="space-y-3">
           {/* Video */}
           <Card title="Video" className="p-0 overflow-hidden">
-            {/* Umiar wysokości: responsywnie (ratio) + miejsce na kontrolki */}
             <div className="h-[360px] md:h-[420px] lg:h-[480px] flex flex-col min-h-0">
               <VideoPlayer />
             </div>
           </Card>
 
           {/* Title */}
-          <Card title="Title">
+          <Card title="Current Scene">
             <span
               className={`text-xs ${
                 currentScene ? "text-zinc-300" : "text-zinc-600"
@@ -242,23 +248,45 @@ export const PlayView: React.FC = () => {
 
           {/* Choices */}
           <Card title="Choices">
-            {choices.length > 0 ? (
+            {choicesWithTargets.length > 0 ? (
               <div className="space-y-2">
-                {choices.map((c) => {
-                  const target = getTargetSceneForChoice(c.id);
-                  const unlocked =
-                    !!target && evalConditions(target.data.conditions, variables);
-
+                {choicesWithTargets.map(({ choice, targets }) => {
+                  // Jeśli Choice prowadzi tylko do jednej dostępnej sceny
+                  if (targets.length === 1) {
+                    return (
+                      <Button
+                        key={choice.id}
+                        variant="primary"
+                        onClick={() => handleChoiceClick(choice.id, targets[0].id)}
+                        className="w-full justify-start"
+                      >
+                        {choice.data.label}
+                      </Button>
+                    );
+                  }
+                  
+                  // Jeśli Choice prowadzi do wielu dostępnych scen
+                  // To pokazuje którą scenę wybierasz (dla debugowania)
                   return (
-                    <Button
-                      key={c.id}
-                      variant={unlocked ? "primary" : "default"}
-                      onClick={() => continueViaChoice(c.id)}
-                      disabled={!unlocked}
-                      className="w-full justify-start"
-                    >
-                      {c.data.label}
-                    </Button>
+                    <div key={choice.id} className="border border-zinc-700 rounded p-2">
+                      <p className="text-xs text-zinc-400 mb-2">{choice.data.label}:</p>
+                      <div className="space-y-1">
+                        {targets.map(target => (
+                          <Button
+                            key={target.id}
+                            variant="primary"
+                            size="xs"
+                            onClick={() => handleChoiceClick(choice.id, target.id)}
+                            className="w-full justify-start"
+                          >
+                            → {target.data.label}
+                            {target.data.isPriority && (
+                              <span className="ml-2 text-yellow-400">★</span>
+                            )}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
                   );
                 })}
               </div>

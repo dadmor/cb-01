@@ -4,7 +4,7 @@ import { isSceneNode, isChoiceNode } from "@/modules/flow";
 import { useFlowStore, START_NODE_ID } from "@/modules/flow/store/useFlowStore";
 import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
 import { ConditionOperator } from "@/modules/variables/types";
-import { Plus } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import { useMemo } from "react";
 
 export const StorymapSidebar: React.FC = () => {
@@ -73,6 +73,37 @@ export const StorymapSidebar: React.FC = () => {
                     }
                   }}
                 />
+
+                {/* Priority toggle for Scene nodes */}
+                <div className="flex items-center justify-between py-2 px-2 bg-zinc-950 border border-zinc-800 rounded">
+                  <div className="flex items-center gap-2">
+                    <Star 
+                      className={`w-4 h-4 ${
+                        selectedNode.data.isPriority 
+                          ? "text-yellow-400 fill-yellow-400" 
+                          : "text-zinc-600"
+                      }`}
+                    />
+                    <span className="text-xs text-zinc-400">Priority Scene</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedNode.data.isPriority || false}
+                      onChange={(e) => updateNode(selectedNode.id, { isPriority: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600"></div>
+                  </label>
+                </div>
+
+                {selectedNode.data.isPriority && (
+                  <div className="p-2 bg-yellow-900/20 border border-yellow-800/30 rounded">
+                    <p className="text-[10px] text-yellow-200/80 leading-relaxed">
+                      This scene will be chosen automatically when multiple scenes are available after playback ends.
+                    </p>
+                  </div>
+                )}
               </>
             )}
 

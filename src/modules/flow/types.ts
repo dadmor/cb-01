@@ -10,7 +10,8 @@ export type SceneNodeData = {
   description?: string;
   durationSec: number;       // fallback gdy brak wideo
   conditions?: Condition[];
-  videoId?: string;         
+  videoId?: string;
+  isPriority?: boolean;      // flaga priorytetu przy automatycznym wyborze
 };
 
 export type ChoiceNodeData = {
@@ -29,4 +30,3 @@ export const isSceneNode = (node: StoryNode): node is SceneNode =>
 
 export const isChoiceNode = (node: StoryNode): node is ChoiceNode =>
   node.type === "choice";
-
