@@ -3,7 +3,7 @@
    
    SYSTEM PRZEPŁYWU NARRACJI - KLUCZOWA LOGIKA
    
-   Ten moduł zarządza automatycznym przepływem między scenami w czasie odtwarzania.
+   Ten moduł zarządza CAŁĄ logiką przepływu między scenami w czasie odtwarzania.
    
    KOMPONENTY SYSTEMU:
    - Scene nodes: bloki narracji z wideo/czasem, mogą mieć warunki (conditions) i priorytet (isPriority)
@@ -25,18 +25,25 @@
          - Domyślnie: pierwsza dostępna scena
       c) Jeśli nic nie jest dostępne → STOP (koniec ścieżki)
    
+   LOGIKA CHOICE (wykonywana przez executeChoice):
+   - Aplikuje effects na variables
+   - Znajduje WSZYSTKIE sceny za Choice
+   - Filtruje dostępne (spełniające conditions)
+   - Wybiera scenę z isPriority=true LUB pierwszą dostępną
+   - Przechodzi automatycznie do wybranej sceny
+   
    KRYTYCZNE ZASADY:
    - Warunki (conditions) są ABSOLUTNE - niespełniony warunek = brak połączenia
    - isPriority działa TYLKO wśród scen SPEŁNIAJĄCYCH warunki
    - Choice ZAWSZE przerywa automatyczny przepływ
-   - Film się NIE zatrzymuje, chyba że brak dostępnych ścieżek
+   - Po kliknięciu Choice system SAM wybiera scenę docelową według priorytetów
    ============================================ */
    import { create } from "zustand";
    import { START_NODE_ID } from "@/modules/flow/store/useFlowStore";
    import { useFlowStore } from "@/modules/flow/store/useFlowStore";
    import { useVideoPlayerStore } from "@/modules/video/store/videoPlayerStore";
    import { VideoStorageService } from "@/modules/video/services/VideoStorageService";
-   import { evalConditions } from "@/modules/variables/logic";
+   import { evalConditions, applyEffects } from "@/modules/variables/logic";
    import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
    import { SceneNode, ChoiceNode, isSceneNode, isChoiceNode } from "@/modules/flow/types";
    
@@ -48,6 +55,19 @@
    
      /** Wywołaj z playera po zakończeniu odtwarzania wideo */
      onVideoEnded: () => void;
+     
+     /** 
+      * Wykonuje Choice - aplikuje efekty i automatycznie wybiera scenę docelową.
+      * @param choiceId - ID Choice node do wykonania
+      * @returns true jeśli przejście się powiodło, false w przeciwnym razie
+      */
+     executeChoice: (choiceId: string) => boolean;
+     
+     /**
+      * Zwraca dostępne Choice nodes dla obecnej sceny.
+      * Choice jest dostępny tylko gdy prowadzi do przynajmniej jednej dostępnej sceny.
+      */
+     getAvailableChoices: () => ChoiceNode[];
    }
    
    let autoAdvanceTimer: number | null = null;
@@ -85,14 +105,7 @@
    
      /**
       * Znajduje następną scenę do automatycznego przejścia.
-      * 
-      * KOLEJNOŚĆ SPRAWDZANIA:
-      * 1. Czy są Choice nodes? → Jeśli tak i prowadzą do dostępnych scen, zwróć null (czekaj na wybór)
-      * 2. Filtruj Scene nodes według conditions (warunki absolutne)
-      * 3. Wybierz według priorytetu:
-      *    - Scena z isPriority=true (jeśli istnieje wśród dostępnych)
-      *    - W przeciwnym razie pierwsza dostępna
-      * 4. Brak dostępnych → zwróć null (koniec ścieżki)
+      * Używana TYLKO dla automatycznych przejść po zakończeniu wideo.
       */
      const findNextScene = (currentSceneId: string): string | null => {
        const { nodes, edges } = useFlowStore.getState();
@@ -151,6 +164,34 @@
        return availableScenes[0].id;
      };
    
+     /**
+      * Znajduje scenę docelową dla Choice według priorytetów.
+      * KLUCZOWA FUNKCJA - wybiera scenę z isPriority lub pierwszą dostępną.
+      */
+     const findTargetSceneForChoice = (choiceId: string): string | null => {
+       const { nodes, edges } = useFlowStore.getState();
+       const { variables } = useVariablesStore.getState();
+       
+       // Znajdź wszystkie sceny za tym Choice
+       const outgoingEdges = edges.filter(e => e.source === choiceId);
+       const targetScenes = outgoingEdges
+         .map(e => nodes.find(n => n.id === e.target))
+         .filter((n): n is SceneNode => n !== undefined && isSceneNode(n));
+       
+       // Filtruj tylko dostępne (spełniające warunki)
+       const availableScenes = targetScenes.filter(scene => 
+         evalConditions(scene.data.conditions, variables)
+       );
+       
+       if (availableScenes.length === 0) {
+         return null;
+       }
+       
+       // PRIORYTET: wybierz scenę z isPriority=true lub pierwszą dostępną
+       const priorityScene = availableScenes.find(s => s.data.isPriority);
+       return priorityScene ? priorityScene.id : availableScenes[0].id;
+     };
+   
      const scheduleAutoAdvance = (sceneId: string) => {
        clearTimer();
    
@@ -207,5 +248,57 @@
        },
    
        onVideoEnded: advanceAfterEnd,
+   
+       executeChoice: (choiceId: string): boolean => {
+         const { nodes } = useFlowStore.getState();
+         const { variables, loadVariables } = useVariablesStore.getState();
+         
+         // Znajdź Choice node
+         const choice = nodes.find(n => n.id === choiceId);
+         if (!choice || !isChoiceNode(choice)) {
+           return false;
+         }
+         
+         // Znajdź scenę docelową według priorytetów
+         const targetSceneId = findTargetSceneForChoice(choiceId);
+         if (!targetSceneId) {
+           return false;
+         }
+         
+         // Aplikuj efekty Choice na zmienne
+         const nextVars = applyEffects(choice.data.effects || {}, variables);
+         loadVariables(nextVars);
+         
+         // Przejdź do wybranej sceny
+         get().goTo(targetSceneId);
+         return true;
+       },
+       
+       getAvailableChoices: (): ChoiceNode[] => {
+         const currentSceneId = get().currentSceneId;
+         if (!currentSceneId) return [];
+         
+         const { nodes, edges } = useFlowStore.getState();
+         const { variables } = useVariablesStore.getState();
+         
+         // Znajdź Choice nodes wychodzące z obecnej sceny
+         const outgoing = edges.filter(e => e.source === currentSceneId);
+         const choices = outgoing
+           .map(e => nodes.find(n => n.id === e.target))
+           .filter((n): n is ChoiceNode => n !== undefined && isChoiceNode(n));
+         
+         // Filtruj tylko te Choice które prowadzą do dostępnych scen
+         return choices.filter(choice => {
+           const choiceOutgoing = edges.filter(e => e.source === choice.id);
+           const choiceTargets = choiceOutgoing
+             .map(e => nodes.find(n => n.id === e.target))
+             .filter((n): n is SceneNode => n !== undefined && isSceneNode(n));
+           
+           // Czy jest jakaś dostępna scena za tym Choice?
+           return choiceTargets.some(scene => 
+             evalConditions(scene.data.conditions, variables)
+           );
+         });
+       }
      };
    });

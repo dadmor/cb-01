@@ -11,12 +11,10 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useFlowStore } from "@/modules/flow/store/useFlowStore";
-import { isSceneNode, isChoiceNode, type SceneNode } from "@/modules/flow/types";
-import { SceneNode as SceneNodeComponent } from "@/modules/flow/nodes/SceneNode";
-import { ChoiceNode as ChoiceNodeComponent } from "@/modules/flow/nodes/ChoiceNode";
+import { isSceneNode } from "@/modules/flow/types";
+import { SceneNode } from "@/modules/flow/nodes/SceneNode";
+import { ChoiceNode } from "@/modules/flow/nodes/ChoiceNode";
 import { usePlayStore } from "@/modules/play/usePlayStore";
-import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
-import { evalConditions, applyEffects } from "@/modules/variables/logic";
 import { VideoPlayer } from "@/views/video/VideoPlayer";
 import { useVideoPlayerStore } from "@/modules/video";
 import { Clock } from "lucide-react";
@@ -29,9 +27,27 @@ import {
   PanelHeader,
 } from "@/components/ui";
 
+/* ============================================
+   PLAY VIEW - WIDOK ODTWARZANIA
+   
+   Ten komponent jest TYLKO interfejsem użytkownika.
+   CAŁA logika przepływu, wyboru scen i priorytetów jest w usePlayStore.
+   
+   Odpowiedzialności:
+   - Wyświetlanie grafu w trybie odtwarzania
+   - Wyświetlanie dostępnych Choice
+   - Delegowanie kliknięć do store (executeChoice)
+   - Prezentacja stanu (obecna scena, wideo, czas)
+   
+   NIE zawiera:
+   - Logiki wyboru scen
+   - Logiki priorytetów
+   - Aplikowania efektów
+   ============================================ */
+
 const nodeTypes: NodeTypes = {
-  scene: SceneNodeComponent,
-  choice: ChoiceNodeComponent,
+  scene: SceneNode,
+  choice: ChoiceNode,
 };
 
 const defaultEdgeOptions = {
@@ -43,15 +59,12 @@ const defaultEdgeOptions = {
 export const PlayView: React.FC = () => {
   const nodes = useFlowStore((s) => s.nodes);
   const edges = useFlowStore((s) => s.edges);
-  const getChoicesForScene = useFlowStore((s) => s.getChoicesForScene);
 
   const currentSceneId = usePlayStore((s) => s.currentSceneId);
   const start = usePlayStore((s) => s.start);
-  const goTo = usePlayStore((s) => s.goTo);
   const resetPlay = usePlayStore((s) => s.reset);
-
-  const variables = useVariablesStore((s) => s.variables);
-  const loadVariables = useVariablesStore((s) => s.loadVariables);
+  const executeChoice = usePlayStore((s) => s.executeChoice);
+  const getAvailableChoices = usePlayStore((s) => s.getAvailableChoices);
 
   const { setCenter, fitView, getZoom } = useReactFlow();
 
@@ -110,47 +123,19 @@ export const PlayView: React.FC = () => {
     });
   }, [currentScene, setCenter, getZoom]);
 
-  const choices = React.useMemo(() => {
-    if (!currentScene) return [];
-    return getChoicesForScene(currentScene.id);
-  }, [currentScene, getChoicesForScene]);
-
-  // Struktura dla UI: Choice -> dostępne Scene za nim
-  const choicesWithTargets = React.useMemo(() => {
-    return choices.map(choice => {
-      // Znajdź wszystkie sceny za tym Choice
-      const outgoingEdges = edges.filter(e => e.source === choice.id);
-      const targetScenes = outgoingEdges
-        .map(e => nodes.find(n => n.id === e.target))
-        .filter((n): n is SceneNode => !!n && isSceneNode(n));
-      
-      // Filtruj tylko te które spełniają warunki
-      const availableScenes = targetScenes.filter(scene => 
-        evalConditions(scene.data.conditions, variables)
-      );
-      
-      return {
-        choice,
-        targets: availableScenes
-      };
-    }).filter(item => item.targets.length > 0); // Pokaż tylko Choice które prowadzą do dostępnych scen
-  }, [choices, edges, nodes, variables]);
-
-  const handleChoiceClick = React.useCallback(
-    (choiceId: string, targetSceneId: string) => {
-      const choice = nodes.find(n => n.id === choiceId);
-      if (!choice || !isChoiceNode(choice)) return;
-
-      // Aplikuj efekty Choice
-      const nextVars = applyEffects(choice.data.effects || {}, variables);
-      loadVariables(nextVars);
-
-      // Przejdź do wybranej sceny
-      lastCenteredRef.current = null;
-      goTo(targetSceneId);
-    },
-    [nodes, variables, loadVariables, goTo]
+  // Pobierz dostępne Choice ze store
+  const availableChoices = React.useMemo(
+    () => getAvailableChoices(),
+    [getAvailableChoices, currentSceneId] // odśwież gdy zmieni się scena
   );
+
+  const handleChoiceClick = (choiceId: string) => {
+    // Deleguj całą logikę do store
+    const success = executeChoice(choiceId);
+    if (success) {
+      lastCenteredRef.current = null; // reset do nowej sceny
+    }
+  };
 
   const handleRestart = () => {
     lastCenteredRef.current = null;
@@ -236,7 +221,7 @@ export const PlayView: React.FC = () => {
           </Card>
 
           {/* Title */}
-          <Card title="Current Scene">
+          <Card title="Title">
             <span
               className={`text-xs ${
                 currentScene ? "text-zinc-300" : "text-zinc-600"
@@ -246,49 +231,20 @@ export const PlayView: React.FC = () => {
             </span>
           </Card>
 
-          {/* Choices */}
+          {/* Choices - PROSTA LISTA, logika w store */}
           <Card title="Choices">
-            {choicesWithTargets.length > 0 ? (
+            {availableChoices.length > 0 ? (
               <div className="space-y-2">
-                {choicesWithTargets.map(({ choice, targets }) => {
-                  // Jeśli Choice prowadzi tylko do jednej dostępnej sceny
-                  if (targets.length === 1) {
-                    return (
-                      <Button
-                        key={choice.id}
-                        variant="primary"
-                        onClick={() => handleChoiceClick(choice.id, targets[0].id)}
-                        className="w-full justify-start"
-                      >
-                        {choice.data.label}
-                      </Button>
-                    );
-                  }
-                  
-                  // Jeśli Choice prowadzi do wielu dostępnych scen
-                  // To pokazuje którą scenę wybierasz (dla debugowania)
-                  return (
-                    <div key={choice.id} className="border border-zinc-700 rounded p-2">
-                      <p className="text-xs text-zinc-400 mb-2">{choice.data.label}:</p>
-                      <div className="space-y-1">
-                        {targets.map(target => (
-                          <Button
-                            key={target.id}
-                            variant="primary"
-                            size="xs"
-                            onClick={() => handleChoiceClick(choice.id, target.id)}
-                            className="w-full justify-start"
-                          >
-                            → {target.data.label}
-                            {target.data.isPriority && (
-                              <span className="ml-2 text-yellow-400">★</span>
-                            )}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                {availableChoices.map((choice) => (
+                  <Button
+                    key={choice.id}
+                    variant="primary"
+                    onClick={() => handleChoiceClick(choice.id)}
+                    className="w-full justify-start"
+                  >
+                    {choice.data.label}
+                  </Button>
+                ))}
               </div>
             ) : (
               <p className="text-xs text-zinc-600 text-center py-4">
