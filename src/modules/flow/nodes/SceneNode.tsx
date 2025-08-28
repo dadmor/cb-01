@@ -36,7 +36,7 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
     [conditions, variables]
   );
 
-  const attachVideo = async (file: File) => {
+  const attachVideo = async () => {
     setBusy(true);
     try {
       console.warn("Attach przez SceneNode -> zalecana nawigacja do /video i import tam.");
@@ -123,7 +123,7 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f) attachVideo(f);
+                    if (f) attachVideo();
                     if (fileRef.current) fileRef.current.value = "";
                   }}
                 />
