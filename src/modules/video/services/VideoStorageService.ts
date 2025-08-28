@@ -167,6 +167,11 @@ export class VideoStorageService {
     this.notify();
   }
 
+  /**
+   * GENEROWANIE MINIATUR Z ZACHOWANIEM PROPORCJI (letterbox)
+   * - stały rozmiar canvasa: 320×180 (16:9), ale obraz rysowany skalą "contain"
+   * - centrowanie kadru i czarne tło dla pustych pasów
+   */
   private async generateThumbnails(videoId: string, file: File): Promise<void> {
     const video = document.createElement('video');
     const canvas = document.createElement('canvas');
@@ -188,15 +193,47 @@ export class VideoStorageService {
 
     const thumbnails: string[] = [];
 
-    canvas.width = 320;
-    canvas.height = 180;
+    // Docelowy „kadr miniatury” — możesz zmienić na inne stałe przy potrzebie
+    const TARGET_W = 320;
+    const TARGET_H = 180;
+    canvas.width = TARGET_W;
+    canvas.height = TARGET_H;
+
+    const srcW = Math.max(1, video.videoWidth || TARGET_W);
+    const srcH = Math.max(1, video.videoHeight || TARGET_H);
+
+    // Funkcja rysująca jedną klatkę z zachowaniem proporcji (contain + centrowanie)
+    const drawFrame = () => {
+      // wyczyść i wypełnij tło (pasy)
+      ctx.clearRect(0, 0, TARGET_W, TARGET_H);
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, TARGET_W, TARGET_H);
+
+      const scale = Math.min(TARGET_W / srcW, TARGET_H / srcH);
+      const dw = Math.round(srcW * scale);
+      const dh = Math.round(srcH * scale);
+      const dx = Math.floor((TARGET_W - dw) / 2);
+      const dy = Math.floor((TARGET_H - dh) / 2);
+
+      // rysujemy pełny kadr źródła w przeskalowany „okienku”
+      ctx.drawImage(
+        video,
+        0, 0, srcW, srcH,   // źródło (cały kadr)
+        dx, dy, dw, dh      // cel (zachowany ratio, wyśrodkowany)
+      );
+    };
 
     for (const time of keyframes) {
       await new Promise<void>((resolve) => {
+        // na części przeglądarek onseeked może odpalać się zanim kadr się „ustabilizuje”
+        // dlatego dodatkowo czekamy na następny „frame” z requestAnimationFrame
+        const drawAndResolve = () => {
+          drawFrame();
+          resolve();
+        };
+        video.onseeked = () => requestAnimationFrame(drawAndResolve);
         video.currentTime = time;
-        video.onseeked = () => resolve();
       });
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       thumbnails.push(canvas.toDataURL('image/jpeg', 0.7));
     }
 
@@ -307,3 +344,4 @@ export function useVideoStorage() {
     getStorageEstimate: () => storage.getStorageEstimate()
   };
 }
+
