@@ -12,7 +12,7 @@ export type SceneNodeData = {
   conditions?: Condition[];
   videoId?: string;
   isPriority?: boolean;    
-  coverImage?: string;    
+  
 };
 
 export type ChoiceNodeData = {

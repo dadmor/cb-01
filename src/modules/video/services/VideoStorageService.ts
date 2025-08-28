@@ -9,6 +9,8 @@ export interface StoredVideo {
   mimeType: string;
   storedFileName: string;  // faktyczna nazwa w OPFS (z poprawnym rozszerzeniem)
   thumbnails?: string[];   // Data URLs for keyframes
+  coverImage?: string;     // wybrana miniatura (dataURL)
+  coverIndex?: number;     // indeks miniatury
 }
 
 type Subscriber = () => void;
@@ -46,8 +48,8 @@ export class VideoStorageService {
         return false;
       }
 
-      this.root = await navigator.storage.getDirectory();
-      this.videosDir = await this.root.getDirectoryHandle('videos', { create: true });
+      this.root = await (navigator.storage as any).getDirectory();
+      this.videosDir = await this.root!.getDirectoryHandle('videos', { create: true });
       await this.loadMetadata();
       return true;
     } catch (error) {
@@ -154,6 +156,17 @@ export class VideoStorageService {
     return { usage: 0, quota: 0 };
   }
 
+  /** Ustaw/zmień okładkę (miniaturę) dla danego video */
+  async setVideoCover(videoId: string, coverDataUrl: string, coverIndex?: number): Promise<void> {
+    const meta = this.metadataCache.get(videoId);
+    if (!meta) throw new Error('Video metadata not found');
+
+    const updated: StoredVideo = { ...meta, coverImage: coverDataUrl, coverIndex };
+    await this.saveMetadata(videoId, updated);
+    this.metadataCache.set(videoId, updated);
+    this.notify();
+  }
+
   private async generateThumbnails(videoId: string, file: File): Promise<void> {
     const video = document.createElement('video');
     const canvas = document.createElement('canvas');
@@ -170,7 +183,7 @@ export class VideoStorageService {
 
     const duration = Math.max(0, video.duration || 0);
     const keyframes = duration > 0
-      ? [0, duration * 0.25, duration * 0.5, duration * 0.75]
+      ? [0, duration * 0.2, duration * 0.4, duration * 0.6, duration * 0.8]
       : [0];
 
     const thumbnails: string[] = [];
@@ -191,9 +204,12 @@ export class VideoStorageService {
 
     const metadata = this.metadataCache.get(videoId);
     if (metadata) {
-      metadata.thumbnails = thumbnails;
-      await this.saveMetadata(videoId, metadata);
-      this.metadataCache.set(videoId, metadata);
+      const updated: StoredVideo = {
+        ...metadata,
+        thumbnails
+      };
+      await this.saveMetadata(videoId, updated);
+      this.metadataCache.set(videoId, updated);
       this.notify();
     }
   }
@@ -202,7 +218,7 @@ export class VideoStorageService {
     if (!this.videosDir) return;
 
     const metadataHandle = await this.videosDir.getFileHandle(`${videoId}.json`, { create: true });
-    const writable = await metadataHandle.createWritable();
+    const writable = await (metadataHandle as any).createWritable();
     await writable.write(JSON.stringify(metadata));
     await writable.close();
   }
@@ -211,7 +227,6 @@ export class VideoStorageService {
     if (!this.videosDir) return;
 
     try {
-      // TS lib.dom nie zawsze ma .values()/.keys(); .entries() jest wspierane
       for await (const [name, handle] of (this.videosDir as any).entries()) {
         const fileHandle = handle as FileSystemFileHandle;
         if ((fileHandle as any).kind === 'file' && typeof name === 'string' && name.endsWith('.json')) {
@@ -226,7 +241,9 @@ export class VideoStorageService {
             lastModified: parsed.lastModified!,
             mimeType: parsed.mimeType!,
             storedFileName,
-            thumbnails: parsed.thumbnails ?? []
+            thumbnails: parsed.thumbnails ?? [],
+            coverImage: parsed.coverImage,
+            coverIndex: parsed.coverIndex
           };
           this.metadataCache.set(metadata.id, metadata);
         }
@@ -275,12 +292,18 @@ export function useVideoStorage() {
     setVideos(await storage.listVideos());
   };
 
+  const setVideoCover = async (videoId: string, coverDataUrl: string, coverIndex?: number) => {
+    await storage.setVideoCover(videoId, coverDataUrl, coverIndex);
+    setVideos(await storage.listVideos());
+  };
+
   return {
     isInitialized,
     videos,
     storeVideo,
     retrieveVideo,
     deleteVideo,
+    setVideoCover,
     getStorageEstimate: () => storage.getStorageEstimate()
   };
 }

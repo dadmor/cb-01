@@ -1,42 +1,37 @@
-import React, { useRef } from 'react';
-import { Film, Upload, HardDrive, X, Check } from 'lucide-react';
-import { useVideoPlayerStore, useVideoStorage } from '@/modules/video';
-import { 
-  Panel, 
-  PanelHeader, 
-  PanelContent, 
+// ------ src/views/video/VideoList.tsx ------
+import React, { useRef } from "react";
+import { Film, Upload, HardDrive, X, Check } from "lucide-react";
+import { useVideoPlayerStore } from "@/modules/video";
+import {
+  Panel,
+  PanelHeader,
+  PanelContent,
   PanelFooter,
   Button,
-  Card
-} from '@/components/ui';
-import { useLocation } from 'react-router-dom';
-import { useFlowStore } from '@/modules/flow/store/useFlowStore';
+  Card,
+} from "@/components/ui";
+import { useLocation } from "react-router-dom";
+import { useVideoStorage } from "@/modules/video/services/VideoStorageService";
 
 export const VideoList: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const { 
-    isInitialized, 
-    videos, 
-    storeVideo, 
-    retrieveVideo, 
-    deleteVideo,
-    getStorageEstimate 
-  } = useVideoStorage();
 
   const {
-    currentVideoId,
-    setCurrentVideo,
-    setIsLoading,
-    clearCurrentVideo
-  } = useVideoPlayerStore();
+    isInitialized,
+    videos,
+    storeVideo,
+    retrieveVideo,
+    deleteVideo,
+    setVideoCover,
+    getStorageEstimate,
+  } = useVideoStorage();
 
-  // ▼ pozwala przypisać okładkę do sceny, gdy przyszliśmy z SceneNode → navigate('/video', { state: { sceneId, videoId } })
-  const location = useLocation() as { state?: { sceneId?: string; videoId?: string } };
-  const sceneIdFromState = location.state?.sceneId;
-  const videoIdFromState = location.state?.videoId;
+  const { currentVideoId, setCurrentVideo, setIsLoading, clearCurrentVideo } =
+    useVideoPlayerStore();
 
-  const updateNode = useFlowStore((s) => s.updateNode);
+  // tylko info UX (nie blokuje wyboru)
+  const location = useLocation() as { state?: { videoId?: string } };
+  const videoIdFromState = location.state?.videoId ?? null;
 
   const [storageInfo, setStorageInfo] = React.useState({ usage: 0, quota: 0 });
   const [uploadingCount, setUploadingCount] = React.useState(0);
@@ -47,12 +42,14 @@ export const VideoList: React.FC = () => {
     }
   }, [isInitialized, videos, getStorageEstimate]);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = Array.from(event.target.files || []);
-    const videoFiles = files.filter(file => file.type.startsWith('video/'));
-    
+    const videoFiles = files.filter((file) => file.type.startsWith("video/"));
+
     setUploadingCount(videoFiles.length);
-    
+
     for (const file of videoFiles) {
       try {
         const id = await storeVideo(file);
@@ -60,13 +57,13 @@ export const VideoList: React.FC = () => {
           handleSelectVideo(id);
         }
       } catch (error) {
-        console.error('Failed to store video:', error);
+        console.error("Failed to store video:", error);
         alert(`Failed to store ${file.name}. Storage might be full.`);
       }
     }
-    
+
     setUploadingCount(0);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSelectVideo = async (videoId: string) => {
@@ -76,41 +73,42 @@ export const VideoList: React.FC = () => {
       const file = await retrieveVideo(videoId);
       if (file) setCurrentVideo(videoId, file);
     } catch (error) {
-      console.error('Failed to load video:', error);
+      console.error("Failed to load video:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteVideo = async (id: string) => {
-    if (!confirm('Delete this video from storage?')) return;
+    if (!confirm("Delete this video from storage?")) return;
     await deleteVideo(id);
     if (currentVideoId === id) {
       clearCurrentVideo();
-      const remaining = videos.filter(v => v.id !== id);
+      const remaining = videos.filter((v) => v.id !== id);
       if (remaining.length > 0) handleSelectVideo(remaining[0].id);
     }
   };
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // ▼ przypisanie miniatury do sceny: klik na miniaturę → ustaw coverImage w SceneNode.data
-  const assignCoverToScene = (thumbDataUrl: string, videoId: string) => {
-    if (!sceneIdFromState) return;                 // brak kontekstu sceny — nie robimy nic
-    if (videoIdFromState && videoIdFromState !== videoId) return; // miniatura nie z wideo tej sceny
-    updateNode(sceneIdFromState, { coverImage: thumbDataUrl });
+  const assignCoverToVideo = async (
+    videoId: string,
+    thumbDataUrl: string,
+    index: number
+  ) => {
+    await setVideoCover(videoId, thumbDataUrl, index);
   };
 
   return (
     <Panel className="w-80 border-r border-zinc-800 flex flex-col">
-      <PanelHeader 
-        title="Media Pool" 
+      <PanelHeader
+        title="Media Pool"
         actions={
           <Button
             variant="ghost"
@@ -119,11 +117,11 @@ export const VideoList: React.FC = () => {
             onClick={() => fileInputRef.current?.click()}
             disabled={!isInitialized || uploadingCount > 0}
           >
-            {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : 'Import'}
+            {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : "Import"}
           </Button>
         }
       />
-      
+
       <input
         ref={fileInputRef}
         type="file"
@@ -142,13 +140,16 @@ export const VideoList: React.FC = () => {
               Browser Storage
             </span>
             <span className="text-zinc-600">
-              {formatBytes(storageInfo.usage)} / {formatBytes(storageInfo.quota)}
+              {formatBytes(storageInfo.usage)} /{" "}
+              {formatBytes(storageInfo.quota)}
             </span>
           </div>
           <div className="h-1 bg-zinc-950 rounded overflow-hidden">
-            <div 
+            <div
               className="h-full bg-orange-600 transition-all"
-              style={{ width: `${(storageInfo.usage / storageInfo.quota) * 100}%` }}
+              style={{
+                width: `${(storageInfo.usage / storageInfo.quota) * 100}%`,
+              }}
             />
           </div>
         </div>
@@ -178,15 +179,16 @@ export const VideoList: React.FC = () => {
         ) : (
           <div className="p-2 space-y-1">
             {videos.map((video) => {
-              const isSceneContext = !!sceneIdFromState && videoIdFromState === video.id;
+              const isLinkedSceneVideo = videoIdFromState === video.id;
+
               return (
                 <Card
                   key={video.id}
                   selected={currentVideoId === video.id}
                   compact
-                  className="relative cursor-pointer"
+                  className="relative"
                 >
-                  {/* Delete button */}
+                  {/* Delete */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -198,56 +200,61 @@ export const VideoList: React.FC = () => {
                     <X className="w-4 h-4" />
                   </button>
 
-                  {/* Kliknięcie w treść = wybór wideo */}
-                  <div onClick={() => handleSelectVideo(video.id)}>
+                  {/* Nagłówek i wybór wideo */}
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => handleSelectVideo(video.id)}
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       <Film className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                      <p className="text-xs text-zinc-300 truncate">{video.fileName}</p>
+                      <p className="text-xs text-zinc-300 truncate">
+                        {video.fileName}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-3 text-zinc-600 text-[10px]">
                       <span>{formatBytes(video.fileSize)}</span>
-                      {isSceneContext && (
+                      {isLinkedSceneVideo && (
                         <span className="inline-flex items-center gap-1 text-green-400">
                           <Check className="w-3 h-3" />
                           <span>Scene linked</span>
                         </span>
                       )}
+                      {video.coverImage && (
+                        <span className="inline-flex items-center gap-1 text-zinc-400">
+                          <span>Cover set</span>
+                        </span>
+                      )}
                     </div>
-                    
-                    {/* Miniaturki z wyborem okładki */}
-                    {video.thumbnails && video.thumbnails.length > 0 && (
-                      <div className="flex gap-1 mt-2">
-                        {video.thumbnails.slice(0, 4).map((thumb, idx) => (
-                          <div
-                            key={idx}
-                            className="group relative w-1/4 aspect-video bg-zinc-900 overflow-hidden rounded"
-                          >
-                            <img
-                              src={thumb}
-                              alt=""
-                              className="w-full h-full object-cover opacity-70"
-                              draggable={false}
-                            />
-                            {/* Przyciski wyboru tylko w kontekście sceny z tym wideo */}
-                            {isSceneContext && (
-                              <button
-                                type="button"
-                                title="Use as scene cover"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  assignCoverToScene(thumb, video.id);
-                                }}
-                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-zinc-100"
-                              >
-                                Use cover
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
+
+                  {/* ▼ Miniatury (POZA wrapperem onClick) — pełna klikalność */}
+                  {video.thumbnails && video.thumbnails.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      {video.thumbnails.slice(0, 5).map((thumb, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className="relative w-1/4 aspect-video bg-zinc-900 overflow-hidden rounded focus:outline-none"
+                          title="Use as video cover"
+                          onClick={() =>
+                            assignCoverToVideo(video.id, thumb, idx)
+                          }
+                        >
+                          <img
+                            src={thumb}
+                            alt=""
+                            className="w-full h-full object-cover opacity-80"
+                            draggable={false}
+                          />
+                          {/* zielona ramka jeśli to wybrana okładka */}
+                          {video.coverIndex === idx && (
+                            <div className="absolute inset-0 border-2 border-orange-600 rounded pointer-events-none" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </Card>
               );
             })}
@@ -257,7 +264,7 @@ export const VideoList: React.FC = () => {
 
       <PanelFooter>
         <span className="text-[10px]">
-          {videos.length} video{videos.length !== 1 ? 's' : ''} stored
+          {videos.length} video{videos.length !== 1 ? "s" : ""} stored
         </span>
       </PanelFooter>
     </Panel>
