@@ -14,20 +14,19 @@ export const Card: React.FC<CardProps> = ({
   title,
   children,
   selected,
-  compact = false,
   className = "",
   onClose,
 }) => (
   <div
     className={`
-      bg-neutral-900 border rounded-sm
+      bg-neutral-900 border rounded-sm p-px
       ${selected ? "border-red-600 shadow-lg shadow-red-900/20" : "border-neutral-800"}
-      ${compact ? "p-1" : "p-2"}
+
       ${className}
     `}
   >
     {title && (
-      <div className="h-5 bg-gradient-to-r from-neutral-800 to-neutral-900 border border-neutral-700 px-1 mb-1 flex items-center justify-between">
+      <div className=" p-3 flex items-center justify-between mb-2">
         <span className="text-xs text-neutral-400 font-medium tracking-wide">
           {title}
         </span>
@@ -42,6 +41,6 @@ export const Card: React.FC<CardProps> = ({
         )}
       </div>
     )}
-    <div>{children}</div>
+    <div className="p-3">{children}</div>
   </div>
 );

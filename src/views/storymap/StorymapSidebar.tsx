@@ -124,7 +124,7 @@ export const StorymapSidebar: React.FC = () => {
 
         {/* Conditions for Scenes */}
         {isSceneNode(selectedNode) && (
-          <Card title="Conditions" className="mt-3">
+          <Card title="Conditions">
             <div className="space-y-2">
               {(selectedNode.data.conditions ?? []).map((cond, idx) => (
                 <div key={idx} className="flex gap-1">
@@ -196,7 +196,7 @@ export const StorymapSidebar: React.FC = () => {
 
         {/* Effects for Choices */}
         {isChoiceNode(selectedNode) && (
-          <Card title="Variable Effects" className="mt-3">
+          <Card title="Variable Effects"  >
             <div className="space-y-2">
               {variables.map((v) => {
                 const effect = selectedNode.data.effects[v.name] ?? 0;

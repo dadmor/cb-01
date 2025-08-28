@@ -14,7 +14,7 @@ export const Input: React.FC<InputProps> = ({ label, className = '', ...props })
     )}
     <input
       className={`
-        w-full bg-black border border-neutral-800 px-2 py-0.5
+        w-full bg-black border border-neutral-800 p-2
         text-neutral-200 text-xs focus:border-red-700 focus:outline-none
         placeholder-neutral-600
         ${className}
@@ -38,7 +38,7 @@ export const Select: React.FC<SelectProps> = ({ label, options, className = '', 
     )}
     <select
       className={`
-        w-full bg-black border border-neutral-800 px-2 py-0.5
+        w-full bg-black border border-neutral-800 p-2 
         text-neutral-200 text-xs focus:border-red-700 focus:outline-none
         ${className}
       `}

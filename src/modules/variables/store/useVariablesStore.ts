@@ -13,10 +13,7 @@ interface VariablesState {
   loadVariables: (variables: Variable[]) => void;
 }
 
-const DEFAULT_VARIABLES: Variable[] = [
-  { name: "health", value: 10, initialValue: 10 },
-  { name: "energy", value: 5, initialValue: 5 },
-];
+const DEFAULT_VARIABLES: Variable[] = [];
 
 export const useVariablesStore = create<VariablesState>()(
   persist(

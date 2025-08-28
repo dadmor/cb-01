@@ -28,7 +28,7 @@ interface PanelContentProps {
 }
 
 export const PanelContent: React.FC<PanelContentProps> = ({ children, className = '' }) => (
-  <div className={`flex-1 overflow-y-auto p-2 ${className}`}>
+  <div className={`flex-1 overflow-y-auto p-px ${className}`}>
     {children}
   </div>
 );
