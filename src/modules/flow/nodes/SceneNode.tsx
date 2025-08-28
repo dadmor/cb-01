@@ -20,7 +20,7 @@ interface SceneNodeProps {
 }
 
 export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
-  const { label, description, durationSec, conditions, videoId, isPriority } = data;
+  const { label, description, conditions, videoId, isPriority } = data;
   const variables = useVariablesStore((s) => s.variables);
   const updateNode = useFlowStore((s) => s.updateNode);
   const navigate = useNavigate();
@@ -39,10 +39,7 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
   const attachVideo = async (file: File) => {
     setBusy(true);
     try {
-      // delegujemy zapisy do VideoStorage z widoku wideo; tu tylko szybkie przypięcie id
-      // (storeVideo i przypięcie videoId wykonaj w widoku wideo)
       console.warn("Attach przez SceneNode -> zalecana nawigacja do /video i import tam.");
-      // fallback: nawiguj do wideo
       handleNavigateToVideo();
     } finally {
       setBusy(false);
@@ -50,19 +47,21 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
   };
 
   const handleNavigateToVideo = () => {
-    navigate('/video', { 
-      state: { 
+    navigate("/video", {
+      state: {
         sceneId: id,
-        videoId: videoId 
-      } 
+        videoId: videoId,
+      },
     });
   };
 
   const coverFromVideo = useMemo(() => {
     if (!ui.showSceneCovers || !videoId) return null;
-    const v = videos.find(v => v.id === videoId);
+    const v = videos.find((v) => v.id === videoId);
     return v?.coverImage ?? null;
   }, [ui.showSceneCovers, videoId, videos]);
+
+  const showCover = !!(ui.showSceneCovers && coverFromVideo);
 
   return (
     <div
@@ -86,18 +85,18 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
         </div>
       )}
 
-      <div className="p-4 h-full flex flex-col">
+      {/* Uwaga: min-h-0 pozwala środkowej sekcji faktycznie się rozciągnąć */}
+      <div className="p-4 h-full flex flex-col min-h-0">
         <div className="flex items-start justify-between mb-2">
           <h3 className="text-sm font-semibold text-zinc-200">{label}</h3>
 
-          {/* Video / priorytet */}
           <div className="flex items-center gap-1">
             {isPriority && (
-              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400"  />
+              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
             )}
 
             {videoId ? (
-              <span 
+              <span
                 onClick={handleNavigateToVideo}
                 className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-200 cursor-pointer hover:bg-zinc-600"
               >
@@ -145,36 +144,24 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
           </div>
         </div>
 
-        {/* Opcjonalna miniatura z VideoStorage */}
-        {ui.showSceneCovers && coverFromVideo && (
-          <div className="mb-2 w-full h-24 overflow-hidden rounded border border-zinc-700 bg-black">
-            <img
-              src={coverFromVideo}
-              alt="scene cover"
-              className="w-full h-full object-cover"
-              draggable={false}
-            />
-          </div>
-        )}
-
-        <div className="flex-1 mb-3">
-          {description && (
-            <p className="text-xs leading-relaxed text-zinc-500 overflow-hidden text-ellipsis line-clamp-5">
-              {description}
-            </p>
+        {/* Środkowa sekcja wypełnia całą pozostałą wysokość */}
+        <div className="relative flex-1 min-h-0">
+          {showCover ? (
+            <div className="absolute inset-0 overflow-hidden rounded border border-zinc-700 bg-black">
+              <img
+                src={coverFromVideo!}
+                alt="scene cover"
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
+            </div>
+          ) : (
+            description && (
+              <p className="text-xs leading-relaxed text-zinc-500 overflow-hidden text-ellipsis line-clamp-6">
+                {description}
+              </p>
+            )
           )}
-        </div>
-
-        <div className="mt-auto">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-zinc-500">
-              {videoId ? "Video" : "Duration"}
-            </span>
-            <span className="text-xs text-zinc-300 font-mono">
-              {videoId ? "auto" : `${durationSec}s`}
-            </span>
-          </div>
-          <div className="h-1 bg-zinc-900 relative overflow-hidden rounded-sm" />
         </div>
       </div>
 
