@@ -44,7 +44,14 @@ export const useVariablesStore = create<VariablesState>()(
           variables: state.variables.filter((v) => v.name !== name),
         })),
 
-      reset: () => set({ variables: DEFAULT_VARIABLES }),
+        reset: () =>
+          set((state) => ({
+            variables: state.variables.map((v) => ({
+              ...v,
+              value: v.initialValue,
+            })),
+          })),
+        
 
       loadVariables: (variables) => set({ variables }),
     }),
