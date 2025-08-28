@@ -11,13 +11,21 @@ import {
   addEdge,
 } from "@xyflow/react";
 
-import { isSceneNode, isChoiceNode, type StoryNode, type SceneNode, type ChoiceNode } from "../types";
+import {
+  isSceneNode,
+  isChoiceNode,
+  type StoryNode,
+  type SceneNode,
+  type ChoiceNode,
+} from "../types";
 import { snapPositionToGrid } from "../gridHelpers";
 
 export const START_NODE_ID = "scene_start";
 
 const generateId = (prefix: "scene" | "choice") =>
-  `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+  `${prefix}_${Date.now().toString(36)}_${Math.random()
+    .toString(36)
+    .slice(2, 9)}`;
 
 interface FlowState {
   nodes: StoryNode[];
@@ -66,21 +74,36 @@ export const useFlowStore = create<FlowState>()(
         set((state) => ({
           edges: applyEdgeChanges(changes, state.edges),
         })),
-
-      // 🔑 tylko dodanie krawędzi
+        
       addConnection: (conn) =>
         set((state) => ({ edges: addEdge(conn, state.edges) })),
-
-      // dodanie choice bez automatycznego pozycjonowania/łączenia
-      addChoiceNode: () =>
+      addChoiceNode: (opts) =>
         set((state) => {
+          const BASE_OFFSET_X = 255;
+          const BASE_OFFSET_Y = 25;
+
+          const baseId =
+            opts?.connectFromId ?? state.selectedNodeId ?? START_NODE_ID;
+
+          const baseNode =
+            state.nodes.find((n) => n.id === baseId) ??
+            state.nodes.find((n) => n.id === START_NODE_ID) ??
+            state.nodes[0];
+
+          const basePos = baseNode?.position ?? { x: 250, y: 250 };
+
           const choiceId = generateId("choice");
           const newChoice: ChoiceNode = {
             id: choiceId,
             type: "choice",
-            position: snapPositionToGrid({ x: 0, y: 0 }),
+            position: snapPositionToGrid({
+              x: basePos.x + BASE_OFFSET_X,
+              y: basePos.y + BASE_OFFSET_Y,
+            }),
             data: {
-              label: `Choice ${state.nodes.filter((n) => n.type === "choice").length + 1}`,
+              label: `Choice ${
+                state.nodes.filter((n) => n.type === "choice").length + 1
+              }`,
               effects: {},
             },
           };
@@ -115,21 +138,24 @@ export const useFlowStore = create<FlowState>()(
           const edgesToDelete = new Set<string>();
 
           state.edges.forEach((e) => {
-            if (e.source === nodeId || e.target === nodeId) edgesToDelete.add(e.id);
+            if (e.source === nodeId || e.target === nodeId)
+              edgesToDelete.add(e.id);
           });
 
           if (isSceneNode(nodeToDelete)) {
             state.nodes.forEach((n) => {
               if (isChoiceNode(n)) {
-                const stillHasTwoLinks = state.edges.filter(
-                  (e) =>
-                    (e.source === n.id || e.target === n.id) &&
-                    !edgesToDelete.has(e.id)
-                ).length >= 2;
+                const stillHasTwoLinks =
+                  state.edges.filter(
+                    (e) =>
+                      (e.source === n.id || e.target === n.id) &&
+                      !edgesToDelete.has(e.id)
+                  ).length >= 2;
                 if (!stillHasTwoLinks) {
                   nodesToDelete.push(n.id);
                   state.edges.forEach((e) => {
-                    if (e.source === n.id || e.target === n.id) edgesToDelete.add(e.id);
+                    if (e.source === n.id || e.target === n.id)
+                      edgesToDelete.add(e.id);
                   });
                 }
               }
@@ -148,17 +174,37 @@ export const useFlowStore = create<FlowState>()(
 
       addSceneNode: () =>
         set((state) => {
-          const maxY = state.nodes.reduce((acc, n) => Math.max(acc, n.position.y), 250);
+          const BASE_OFFSET_X = 0;
+          const BASE_OFFSET_Y = 260; 
+
+          const baseId = state.selectedNodeId ?? START_NODE_ID;
+
+          const baseNode =
+            state.nodes.find((n) => n.id === baseId) ??
+            state.nodes.find((n) => n.id === START_NODE_ID) ??
+            state.nodes[0];
+
+          const basePos = baseNode?.position ?? { x: 250, y: 250 };
+
           const newNode: SceneNode = {
             id: generateId("scene"),
             type: "scene",
-            position: snapPositionToGrid({ x: 400, y: maxY + 100 }),
+            position: snapPositionToGrid({
+              x: basePos.x + BASE_OFFSET_X,
+              y: basePos.y + BASE_OFFSET_Y,
+            }),
             data: {
-              label: `Scene ${state.nodes.filter((n) => n.type === "scene").length}`,
+              label: `Scene ${
+                state.nodes.filter((n) => n.type === "scene").length
+              }`,
               durationSec: 5,
             },
           };
-          return { nodes: [...state.nodes, newNode], selectedNodeId: newNode.id };
+
+          return {
+            nodes: [...state.nodes, newNode],
+            selectedNodeId: newNode.id,
+          };
         }),
 
       getNode: (nodeId) => get().nodes.find((n) => n.id === nodeId),
@@ -181,6 +227,9 @@ export const useFlowStore = create<FlowState>()(
           selectedNodeId: null,
         }),
     }),
-    { name: "flow-storage", partialize: (s) => ({ nodes: s.nodes, edges: s.edges }) }
+    {
+      name: "flow-storage",
+      partialize: (s) => ({ nodes: s.nodes, edges: s.edges }),
+    }
   )
 );

@@ -5,7 +5,7 @@ import { SceneNodeData } from "../types";
 import { cn } from "@/lib/utils";
 import { useVariablesStore } from "@/modules/variables/store/useVariablesStore";
 import { evalConditions, conditionLabel } from "@/modules/variables/logic";
-import { Lock, Paperclip, X, Film } from "lucide-react";
+import { Lock, Paperclip, X, Film, Star } from "lucide-react";
 import { useFlowStore } from "../store/useFlowStore";
 import { VideoStorageService } from "@/modules/video/services/VideoStorageService";
 import { useNavigate } from "react-router-dom";
@@ -44,11 +44,11 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
 
   // Navigate to video view with scene pre-selected
   const handleNavigateToVideo = () => {
-    navigate('/video', { 
-      state: { 
+    navigate("/video", {
+      state: {
         sceneId: id,
-        videoId: videoId 
-      } 
+        videoId: videoId,
+      },
     });
   };
 
@@ -80,8 +80,12 @@ export const SceneNode: React.FC<SceneNodeProps> = ({ id, data, selected }) => {
 
           {/* Video attachment UI */}
           <div className="flex items-center gap-1">
+            {/* ⭐ priorytet */}
+            {data.isPriority && (
+              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+            )}
             {videoId ? (
-              <span 
+              <span
                 onClick={handleNavigateToVideo}
                 className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-200 cursor-pointer hover:bg-zinc-600"
               >

@@ -8,10 +8,11 @@ import { Condition } from "@/modules/variables/types";
 export type SceneNodeData = {
   label: string;
   description?: string;
-  durationSec: number;       // fallback gdy brak wideo
+  durationSec: number;       
   conditions?: Condition[];
   videoId?: string;
-  isPriority?: boolean;      // flaga priorytetu przy automatycznym wyborze
+  isPriority?: boolean;    
+  coverImage?: string;    
 };
 
 export type ChoiceNodeData = {

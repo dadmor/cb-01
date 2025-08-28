@@ -107,11 +107,17 @@ export const StorymapSidebar: React.FC = () => {
               </>
             )}
 
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               {isSceneNode(selectedNode) && (
-                <Button size="xs" onClick={() => addChoiceNode({ connectFromId: selectedNode.id })}>
-                  + Choice
-                </Button>
+                <div className="flex gap-1">
+                 
+                  <Button size="xs"  onClick={() => addSceneNode()}>
+                    + Scene
+                  </Button>
+                  <Button size="xs" onClick={() => addChoiceNode({ connectFromId: selectedNode.id })}>
+                    + Choice
+                  </Button>
+                </div>
               )}
               {selectedNode.id !== START_NODE_ID && (
                 <Button size="xs" variant="ghost" onClick={() => deleteNode(selectedNode.id)}>
