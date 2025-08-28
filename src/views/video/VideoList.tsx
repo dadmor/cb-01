@@ -1,6 +1,5 @@
-// src/views/video/VideoList.tsx
 import React, { useRef } from 'react';
-import { Film, Upload, HardDrive, X } from 'lucide-react';
+import { Film, Upload, HardDrive, X, Check } from 'lucide-react';
 import { useVideoPlayerStore, useVideoStorage } from '@/modules/video';
 import { 
   Panel, 
@@ -10,6 +9,8 @@ import {
   Button,
   Card
 } from '@/components/ui';
+import { useLocation } from 'react-router-dom';
+import { useFlowStore } from '@/modules/flow/store/useFlowStore';
 
 export const VideoList: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,6 +30,13 @@ export const VideoList: React.FC = () => {
     setIsLoading,
     clearCurrentVideo
   } = useVideoPlayerStore();
+
+  // ▼ pozwala przypisać okładkę do sceny, gdy przyszliśmy z SceneNode → navigate('/video', { state: { sceneId, videoId } })
+  const location = useLocation() as { state?: { sceneId?: string; videoId?: string } };
+  const sceneIdFromState = location.state?.sceneId;
+  const videoIdFromState = location.state?.videoId;
+
+  const updateNode = useFlowStore((s) => s.updateNode);
 
   const [storageInfo, setStorageInfo] = React.useState({ usage: 0, quota: 0 });
   const [uploadingCount, setUploadingCount] = React.useState(0);
@@ -90,6 +98,13 @@ export const VideoList: React.FC = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // ▼ przypisanie miniatury do sceny: klik na miniaturę → ustaw coverImage w SceneNode.data
+  const assignCoverToScene = (thumbDataUrl: string, videoId: string) => {
+    if (!sceneIdFromState) return;                 // brak kontekstu sceny — nie robimy nic
+    if (videoIdFromState && videoIdFromState !== videoId) return; // miniatura nie z wideo tej sceny
+    updateNode(sceneIdFromState, { coverImage: thumbDataUrl });
   };
 
   return (
@@ -162,57 +177,80 @@ export const VideoList: React.FC = () => {
           </div>
         ) : (
           <div className="p-2 space-y-1">
-            {videos.map((video) => (
-              <Card
-                key={video.id}
-                selected={currentVideoId === video.id}
-                compact
-                className="relative cursor-pointer"
-              >
-                {/* Delete button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteVideo(video.id);
-                  }}
-                  className="absolute top-1 right-1 p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400"
-                  title="Delete video"
+            {videos.map((video) => {
+              const isSceneContext = !!sceneIdFromState && videoIdFromState === video.id;
+              return (
+                <Card
+                  key={video.id}
+                  selected={currentVideoId === video.id}
+                  compact
+                  className="relative cursor-pointer"
                 >
-                  <X className="w-4 h-4" />
-                </button>
+                  {/* Delete button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteVideo(video.id);
+                    }}
+                    className="absolute top-1 right-1 p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400"
+                    title="Delete video"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
 
-                {/* Kliknięcie w treść = wybór wideo */}
-                <div onClick={() => handleSelectVideo(video.id)}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Film className="w-4 h-4 text-zinc-600 flex-shrink-0" />
-                    <p className="text-xs text-zinc-300 truncate">{video.fileName}</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-zinc-600 text-[10px]">
-                    <span>{formatBytes(video.fileSize)}</span>
-                  </div>
-                  
-                  {/* Miniaturki */}
-                  {video.thumbnails && video.thumbnails.length > 0 && (
-                    <div className="flex gap-1 mt-2">
-                      {video.thumbnails.slice(0, 4).map((thumb, idx) => (
-                        <div
-                          key={idx}
-                          className="w-1/4 aspect-video bg-zinc-900 overflow-hidden rounded"
-                        >
-                          <img
-                            src={thumb}
-                            alt=""
-                            className="w-full h-full object-cover opacity-70"
-                            draggable={false}
-                          />
-                        </div>
-                      ))}
+                  {/* Kliknięcie w treść = wybór wideo */}
+                  <div onClick={() => handleSelectVideo(video.id)}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Film className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                      <p className="text-xs text-zinc-300 truncate">{video.fileName}</p>
                     </div>
-                  )}
-                </div>
-              </Card>
-            ))}
+
+                    <div className="flex items-center gap-3 text-zinc-600 text-[10px]">
+                      <span>{formatBytes(video.fileSize)}</span>
+                      {isSceneContext && (
+                        <span className="inline-flex items-center gap-1 text-green-400">
+                          <Check className="w-3 h-3" />
+                          <span>Scene linked</span>
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Miniaturki z wyborem okładki */}
+                    {video.thumbnails && video.thumbnails.length > 0 && (
+                      <div className="flex gap-1 mt-2">
+                        {video.thumbnails.slice(0, 4).map((thumb, idx) => (
+                          <div
+                            key={idx}
+                            className="group relative w-1/4 aspect-video bg-zinc-900 overflow-hidden rounded"
+                          >
+                            <img
+                              src={thumb}
+                              alt=""
+                              className="w-full h-full object-cover opacity-70"
+                              draggable={false}
+                            />
+                            {/* Przyciski wyboru tylko w kontekście sceny z tym wideo */}
+                            {isSceneContext && (
+                              <button
+                                type="button"
+                                title="Use as scene cover"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  assignCoverToScene(thumb, video.id);
+                                }}
+                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-zinc-100"
+                              >
+                                Use cover
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
       </PanelContent>

@@ -36,7 +36,7 @@ export const StoryView: React.FC = () => {
       {/* Main Canvas */}
       <FlexContainer flex direction="col" className="bg-zinc-950">
         <Panel className="flex-1">
-          <FlowCanvas />
+          <FlowCanvas showSceneCovers />
         </Panel>
       </FlexContainer>
 
